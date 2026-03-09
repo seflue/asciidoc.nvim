@@ -1,0 +1,116 @@
+*asciidoc.nvim.txt*    AsciiDoc support for Neovim
+
+==============================================================================
+INTRODUCTION                                              *asciidoc.nvim*
+
+Batteries-included AsciiDoc plugin for Neovim 0.11+.
+Provides LSP client config, Treesitter grammar registration, syntax queries,
+buffer settings, filetype detection, and health checks — zero-config.
+
+==============================================================================
+REQUIREMENTS                                    *asciidoc.nvim-requirements*
+
+- Neovim >= 0.11
+- nvim-treesitter (for `:TSInstall`)
+- asciidoc-lsp binary in `$PATH` (for LSP features)
+
+Install parsers after plugin setup: >
+    :TSInstall asciidoc asciidoc_inline
+<
+
+==============================================================================
+INSTALLATION                                    *asciidoc.nvim-installation*
+
+Lazy.nvim (minimal, zero-config): >lua
+    {
+        'user/asciidoc.nvim',
+        ft = 'asciidoc',
+        dependencies = { 'nvim-treesitter/nvim-treesitter' },
+    }
+<
+
+Lazy.nvim (with overrides): >lua
+    {
+        'user/asciidoc.nvim',
+        ft = 'asciidoc',
+        dependencies = { 'nvim-treesitter/nvim-treesitter' },
+        init = function()
+            vim.g.asciidoc = {
+                treesitter = { auto_install = true },
+            }
+            vim.lsp.config('asciidoc', {
+                cmd = { '/custom/path/asciidoc-lsp' },
+            })
+            vim.lsp.enable('asciidoc')
+        end,
+    }
+<
+
+==============================================================================
+CONFIGURATION                                  *asciidoc.nvim-configuration*
+
+                                                          *vim.g.asciidoc*
+Plugin settings via `vim.g.asciidoc`. No `setup()` call needed.
+
+Default values: >lua
+    vim.g.asciidoc = {
+        treesitter = {
+            auto_install = false,  -- auto-install parsers if missing
+        },
+    }
+<
+
+                                                    *asciidoc.nvim-lsp*
+LSP config uses Neovim 0.11 native defaults (`lsp/asciidoc.lua`).
+Override with `vim.lsp.config()` before enabling: >lua
+    vim.lsp.config('asciidoc', {
+        cmd = { '/custom/path/asciidoc-lsp' },
+        settings = { ... },
+    })
+    vim.lsp.enable('asciidoc')
+<
+
+==============================================================================
+TREESITTER                                        *asciidoc.nvim-treesitter*
+
+The plugin registers the cathaysia AsciiDoc grammars with nvim-treesitter:
+
+- `asciidoc` — block-level grammar (sections, blocks, macros)
+- `asciidoc_inline` — inline grammar (bold, italic, links, xrefs)
+
+Inline content is injected via `injections.scm` (paragraph lines).
+Source block language injection supports 16 languages.
+
+==============================================================================
+QUERIES                                            *asciidoc.nvim-queries*
+
+Bundled queries in `queries/asciidoc/` and `queries/asciidoc_inline/`:
+
+  `highlights.scm`     Syntax highlighting (block + inline)
+  `folds.scm`          Section and block folding
+  `injections.scm`     Inline injection + source block languages
+  `textobjects.scm`    Section/block selection (nvim-treesitter-textobjects)
+
+Textobjects (requires nvim-treesitter-textobjects):
+  `vas` / `vis`        Select around/inner section
+  `vab` / `vib`        Select around/inner delimiter block
+
+==============================================================================
+HEALTH CHECK                                    *asciidoc.nvim-health*
+
+Run `:checkhealth asciidoc` to verify the setup. Checks:
+
+1. Neovim version >= 0.11
+2. `asciidoc-lsp` binary in `$PATH` (with version)
+3. Treesitter ABI version
+4. Treesitter parser `asciidoc` installed
+5. Treesitter parser `asciidoc_inline` installed
+6. nvim-treesitter plugin available (optional)
+
+==============================================================================
+LICENSE                                            *asciidoc.nvim-license*
+
+MIT License
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
