@@ -1,3 +1,20 @@
+-- ---------------------------------------------------------------------------
+-- LSP auto-enable
+-- ---------------------------------------------------------------------------
+-- Ensures defaults from `lsp/asciidoc.lua` (root_markers, filetypes, cmd) are
+-- applied without the user needing to call `vim.lsp.enable("asciidoc")` from
+-- their own config. Calling it from here is the only race-free spot when the
+-- plugin is lazy-loaded on `ft = "asciidoc"`: by the time this file runs, the
+-- plugin is on `runtimepath`, so `lsp/asciidoc.lua` is discoverable, and
+-- `vim.lsp.enable` retroactively starts a client for the already-open buffer
+-- that triggered the load.
+do
+    local ok, config = pcall(require, "asciidoc.config")
+    if ok and config.lsp and config.lsp.enable ~= false then
+        vim.lsp.enable("asciidoc")
+    end
+end
+
 -- Treesitter Grammar Registration for cathaysia dual-grammar
 -- (asciidoc + asciidoc_inline)
 --

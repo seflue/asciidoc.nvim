@@ -6,6 +6,11 @@ local defaults = {
         asciidoc = nil,
         asciidoc_inline = nil,
     },
+    lsp = {
+        -- Auto-enable the asciidoc LSP client when this plugin loads.
+        -- Set to false if you prefer to call `vim.lsp.enable("asciidoc")` yourself.
+        enable = true,
+    },
 }
 
 local user_config = vim.g.asciidoc or {}
