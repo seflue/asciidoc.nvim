@@ -1,37 +1,8 @@
 ; injections.scm for asciidoc (block-level grammar)
 ; asciidoc.nvim — Parser: cathaysia/tree-sitter-asciidoc
 
-; --- Inline injection into paragraph lines ---
-; The block-level parser produces (line) nodes inside paragraphs without
-; decomposing inline content. Inject asciidoc_inline to parse bold, italic,
-; inline macros (image:, kbd:, etc.), xrefs, and attribute references.
-; Paragraphs
-(paragraph
-  (line) @injection.content
-  (#set! injection.language "asciidoc_inline"))
-
-; List items (ordered, unordered, checked, callout)
-(ordered_list_item
-  (line) @injection.content
-  (#set! injection.language "asciidoc_inline"))
-
-(unordered_list_item
-  (line) @injection.content
-  (#set! injection.language "asciidoc_inline"))
-
-(checked_list_item
-  (line) @injection.content
-  (#set! injection.language "asciidoc_inline"))
-
-(callout_list_item
-  (line) @injection.content
-  (#set! injection.language "asciidoc_inline"))
-
-; Indented blocks (e.g. nested list items parsed as ident_block)
-; ident_block_line has no named content child — inject the whole node.
-; The ident_marker (whitespace + bullet) is harmless for the inline parser.
-((ident_block_line) @injection.content
-  (#set! injection.language "asciidoc_inline"))
+; No asciidoc_inline injection: the grammar parses inline content (monospace,
+; emphasis, xref, inline_macro, ...) directly inside (line) nodes.
 
 ; --- Source Block Language Injection ---
 ; Tree structure (verified via :InspectTree):
