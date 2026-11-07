@@ -16,7 +16,7 @@ deps:
 
 # Build the asciidoc parsers into deps/site/ if missing (needs the tree-sitter CLI)
 parsers:
-    @test -d deps/tree-sitter-asciidoc || git clone --filter=blob:none https://github.com/bovinemagnet/tree-sitter-asciidoc deps/tree-sitter-asciidoc
+    @test -d deps/tree-sitter-asciidoc || git clone --filter=blob:none https://github.com/seflue/tree-sitter-asciidoc deps/tree-sitter-asciidoc
     @git -C deps/tree-sitter-asciidoc checkout --quiet --detach {{grammar_rev}}
     @mkdir -p deps/site/parser
     @test -f deps/site/parser/asciidoc.so || tree-sitter build -o deps/site/parser/asciidoc.so deps/tree-sitter-asciidoc/tree-sitter-asciidoc

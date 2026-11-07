@@ -41,8 +41,8 @@ vim.api.nvim_create_autocmd("User", {
         local parsers = require("nvim-treesitter.parsers")
 
         local upstream = {
-            url = "https://github.com/bovinemagnet/tree-sitter-asciidoc",
-            branch = "master",
+            url = "https://github.com/seflue/tree-sitter-asciidoc",
+            branch = "develop",
         }
 
         local adoc_override = config.treesitter.asciidoc or {}

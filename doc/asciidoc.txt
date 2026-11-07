@@ -73,7 +73,7 @@ Override with `vim.lsp.config()` before enabling: >lua
 ==============================================================================
 TREESITTER                                        *asciidoc.nvim-treesitter*
 
-The plugin registers the bovinemagnet AsciiDoc grammars with nvim-treesitter:
+The plugin registers the seflue AsciiDoc grammars with nvim-treesitter:
 
 - `asciidoc` — block-level grammar (sections, blocks, macros)
 - `asciidoc_inline` — inline grammar (bold, italic, links, xrefs)
