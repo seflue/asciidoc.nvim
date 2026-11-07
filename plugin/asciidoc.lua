@@ -24,13 +24,6 @@ end
 --   3. vim.api.nvim_exec_autocmds('User', { pattern = 'TSUpdate' })  (hook)
 -- Our callback runs at step 3, mutating the fresh table BEFORE install/config uses it.
 
--- Default highlights for custom capture groups — user/colorscheme can override
-vim.api.nvim_set_hl(0, "@markup.mark.asciidoc_inline", {
-    default = true,
-    bg = "#3a3a2a",
-    italic = true,
-})
-
 -- Language registration MUST happen before the autocmd so Neovim maps
 -- filetype "asciidoc" -> parser "asciidoc" immediately.
 vim.treesitter.language.register("asciidoc", "asciidoc")
@@ -48,7 +41,7 @@ vim.api.nvim_create_autocmd("User", {
         local parsers = require("nvim-treesitter.parsers")
 
         local upstream = {
-            url = "https://github.com/cathaysia/tree-sitter-asciidoc",
+            url = "https://github.com/bovinemagnet/tree-sitter-asciidoc",
             branch = "master",
         }
 

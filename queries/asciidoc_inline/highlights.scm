@@ -1,117 +1,90 @@
-; highlights.scm for asciidoc_inline
-; asciidoc.nvim — Parser: cathaysia/tree-sitter-asciidoc (inline grammar)
+[
+  (monospace)
+  (passthrough)
+] @markup.raw @nospell
 
-; =============================================================================
-; --- Text Formatting ---
-; =============================================================================
-
-; *bold*
 (emphasis) @markup.strong
 
-; _italic_
-(ltalic) @markup.italic
+(italic) @markup.italic
 
-; `monospace`
-(monospace) @markup.raw
+(highlight) @markup.italic
 
-; #highlighted# or [.role]#text#
-(highlight) @markup.mark
+(superscript) @markup.superscript
 
-; =============================================================================
-; --- Links ---
-; =============================================================================
+(subscript) @markup.subscript
 
-; https://example.com (bare URLs)
-(autolink) @markup.link.url
+[
+  (link_url)
+  (email)
+] @markup.link.url @markup.link
 
-; URI component
-(uri) @markup.link.url
-
-; Link label text
 (uri_label) @markup.link.label
 
-; https://example.com[Label]
-(labled_uri) @markup.link
+[
+  "["
+  "]"
+  "{"
+  "}"
+  "<<" @punctuation.bracket
+  ">>" @punctuation.bracket
+] @punctuation.bracket
 
-; email addresses
-(email) @markup.link.url
+":" @punctuation.delimiter
 
-; =============================================================================
-; --- Cross-References ---
-; =============================================================================
-
-; <<anchor>> or <<anchor,display text>>
-(xref) @markup.link
-(xref
-  "<<" @punctuation.special
-  ">>" @punctuation.special)
-(xref
-  (reftext) @markup.link.label)
-
-; =============================================================================
-; --- Inline Macros ---
-; =============================================================================
-
-; xref:target[display text] — cross-reference macro (link-style)
-(inline_macro
-  (macro_name) @_name
-  (#eq? @_name "xref")
-  (target) @markup.link
-  (attr) @markup.link.label)
-(inline_macro
-  (macro_name) @_name
-  (#eq? @_name "xref")
-  "[" @punctuation.special
-  "]" @punctuation.special)
-
-; Other macros: kbd:[Ctrl+C], btn:[OK], menu:File[Save], image:path[]
-(inline_macro
-  (macro_name) @function.macro
-  (target) @string.special.path)
-
-; Passthrough macros
-(macro_passthrough) @markup.raw
-
-; Stem macros (math)
-(stem_macro) @markup.math
-
-; =============================================================================
-; --- Anchors / IDs ---
-; =============================================================================
-
-; [[anchor-id]]
-(id_assignment) @tag
-(id_assignment
-  "[[" @punctuation.special
-  "]]" @punctuation.special)
-
-; =============================================================================
-; --- Passthrough ---
-; =============================================================================
-
-; +passthrough+ or +++passthrough+++
-(passthrough) @markup.raw
-
-; =============================================================================
-; --- Special Content ---
-; =============================================================================
-
-; Character replacements (arrows, dashes, etc.)
 (replacement) @string.special
 
-; Footnotes
-(footnote) @markup.note
+(roled_text
+  (role) @attribute)
 
-; Escaped sequences
+(attribute_reference
+  (attribute_name) @constant)
+
+(xref
+  (reftext) @markup.link @markup.link.url)
+
+(xref
+  (id) @markup.link @markup.link.url .)
+
+(xref
+  (id) @markup.link.label
+  (reftext) @markup.link @markup.link.url)
+
+[
+  (macro_name)
+  "((("
+  ")))"
+  "(("
+  "))"
+] @keyword
+
+(inline_macro
+  (target) @label)
+
+(inline_macro
+  (attr) @attribute)
+
 (escaped_sequence) @string.escape
 
-; =============================================================================
-; --- Attribute References ---
-; =============================================================================
+(inline_macro
+  (target)? @markup.link @markup.link.url
+  (attr)? @label)
 
-; {attribute-name}
-(intrinsic_attributes) @variable
+(stem_macro
+  (target)? @label
+  (attr)? @markup.raw @nospell)
 
-; Index terms
-(index_term) @keyword
-(index_term2) @keyword
+(footnote
+  (target)? @label
+  (attr) @attribute)
+
+; The value of a named macro attribute (e.g. `window=_blank`).
+(named_attr
+  (attribute_value) @string)
+
+(term) @attribute
+
+(id_assignment) @label
+
+(super_escape) @string.special
+
+(hard_wrap) @punctuation.special

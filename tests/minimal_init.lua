@@ -10,6 +10,7 @@ vim.g.asciidoc_nvim_root = root
 vim.opt.runtimepath:prepend(root)
 package.path = root .. "/tests/?.lua;" .. package.path
 vim.opt.runtimepath:append(root .. "/deps/mini.nvim")
+vim.opt.runtimepath:append(root .. "/deps/site")
 vim.opt.swapfile = false
 
 local lsp_cmd = vim.env.ASCIIDOC_LSP_CMD

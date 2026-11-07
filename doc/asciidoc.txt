@@ -73,13 +73,14 @@ Override with `vim.lsp.config()` before enabling: >lua
 ==============================================================================
 TREESITTER                                        *asciidoc.nvim-treesitter*
 
-The plugin registers the cathaysia AsciiDoc grammars with nvim-treesitter:
+The plugin registers the bovinemagnet AsciiDoc grammars with nvim-treesitter:
 
 - `asciidoc` — block-level grammar (sections, blocks, macros)
 - `asciidoc_inline` — inline grammar (bold, italic, links, xrefs)
 
 Inline content is injected via `injections.scm` (paragraph lines).
-Source block language injection supports 16 languages.
+Source blocks take their language from `[source,<lang>]`, diagram
+blocks from their style (e.g. `[mermaid]`).
 
 ==============================================================================
 QUERIES                                            *asciidoc.nvim-queries*

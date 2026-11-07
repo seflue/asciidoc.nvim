@@ -1,177 +1,85 @@
-; injections.scm for asciidoc (block-level grammar)
-; asciidoc.nvim — Parser: cathaysia/tree-sitter-asciidoc
+((block_macro
+  (block_macro_name)
+  (target) @injection.content)
+  (#set! injection.language "asciidoc_inline"))
 
-; No asciidoc_inline injection: the grammar parses inline content (monospace,
-; emphasis, xref, inline_macro, ...) directly inside (line) nodes.
+((table_cell
+  (table_cell_content) @injection.content)
+  (#set! injection.language "asciidoc_inline"))
 
-; --- Source Block Language Injection ---
-; Tree structure (verified via :InspectTree):
-;   (section_block
-;     (element_attr
-;       (attr_value))          ; "source,rust" — single node, comma-separated
-;     (listing_block
-;       (listing_block_body))) ; code content
-;
-; element_attr and listing_block are siblings under section_block.
-; attr_value contains the full string "source,<lang>".
-; We use #match? with regex to extract the language.
+; Lines outside paragraphs contain inline AsciiDoc too (titles, list items, etc.).
+([
+  (admonition (line) @injection.content)
+  (block_title (line) @injection.content)
+  (callout_list_item (line) @injection.content)
+  (checked_list_item (line) @injection.content)
+  (description_list_item (line) @injection.content)
+  (document_attr (line) @injection.content)
+  (document_title (line) @injection.content)
+  (ordered_list_item (line) @injection.content)
+  (quoted_block (line) @injection.content)
+  (quoted_line (line) @injection.content)
+  (quoted_md_block (line) @injection.content)
+  (title1 (line) @injection.content)
+  (title2 (line) @injection.content)
+  (title3 (line) @injection.content)
+  (title4 (line) @injection.content)
+  (title5 (line) @injection.content)
+  (unordered_list_item (line) @injection.content)
+]
+  (#set! injection.include-children)
+  (#set! injection.language "asciidoc_inline"))
 
-; Rust
+; Plain paragraphs use the inline grammar. Source-styled paragraphs are
+; excluded because they are injected in their declared language below.
+((section_block
+  (paragraph) @injection.content) @_block
+  (#not-match? @_block "(^|\\n)\\[\\s*source\\s*[,#.%\\]]")
+  (#set! injection.include-children)
+  (#set! injection.language "asciidoc_inline"))
+
+; Source listing: `[source,ruby]` - the language is the second positional.
+((section_block
+  (element_attr
+    (positional_attr
+      (block_style))
+    (positional_attr) @injection.language)
+  (listing_block
+    (listing_block_start_marker)
+    (listing_block_body) @injection.content
+    (listing_block_end_marker))))
+
+; Diagram listing: `[mermaid]` - the language is the style itself.
+((section_block
+  (element_attr
+    (positional_attr
+      (block_style) @injection.language))
+  (listing_block
+    (listing_block_start_marker)
+    (listing_block_body) @injection.content
+    (listing_block_end_marker)))
+  (#any-of? @injection.language
+    "a2s" "barcode" "blockdiag" "bpmn" "bytefield" "d2" "dbml" "diagrams" "ditaa" "dpic" "erd"
+    "gnuplot" "graphviz" "lilypond" "meme" "mermaid" "msc" "nomnoml" "pikchr" "plantuml" "shaape"
+    "smcat" "structurizr" "svgbob" "symbolator" "syntrax" "tikz" "umlet" "vega" "wavedrom"))
+
+; Source paragraph: `[source,ruby]` over an undelimited source block.
+((section_block
+  (element_attr
+    (positional_attr
+      (block_style))
+    (positional_attr) @injection.language)
+  (paragraph) @injection.content)
+  (#set! injection.include-children))
+
+; latexmath passthrough block, mapped onto the latex grammar.
 (section_block
   (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,rust"))
-  (listing_block
+    (positional_attr
+      (block_style) @_style))
+  (passthrough_block
+    (passthrough_block_marker)
     (listing_block_body) @injection.content
-    (#set! injection.language "rust")))
-
-; Python
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,python"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "python")))
-
-; JavaScript
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,javascript"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "javascript")))
-
-; TypeScript
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,typescript"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "typescript")))
-
-; Lua
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,lua"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "lua")))
-
-; Java
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,java$"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "java")))
-
-; C
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,c$"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "c")))
-
-; C++
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,cpp"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "cpp")))
-
-; Go
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,go$"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "go")))
-
-; Bash/Shell
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,bash"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "bash")))
-
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,sh$"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "bash")))
-
-; YAML
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,yaml"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "yaml")))
-
-; TOML
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,toml"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "toml")))
-
-; JSON
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,json"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "json")))
-
-; XML/HTML
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,xml"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "xml")))
-
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,html"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "html")))
-
-; SQL
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,sql"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "sql")))
-
-; Ruby
-(section_block
-  (element_attr
-    (attr_value) @_attr
-    (#match? @_attr "^source,ruby"))
-  (listing_block
-    (listing_block_body) @injection.content
-    (#set! injection.language "ruby")))
+    (passthrough_block_marker))
+  (#any-of? @_style "latexmath")
+  (#set! injection.language "latex"))
