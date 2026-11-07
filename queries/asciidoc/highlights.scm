@@ -188,3 +188,9 @@
     "smcat" "structurizr" "svgbob" "symbolator" "syntrax" "tikz" "umlet" "vega" "wavedrom"))
 
 (line) @spell
+
+; Default table cells have no (line) child.
+(table_cell_content) @spell
+
+(document_attr
+  (line) @nospell)

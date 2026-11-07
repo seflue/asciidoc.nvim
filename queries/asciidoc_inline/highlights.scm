@@ -88,3 +88,32 @@
 (super_escape) @string.special
 
 (hard_wrap) @punctuation.special
+
+; Spell: (line) in the block grammar marks all inline text as @spell, so
+; everything technical inside it opts out here. Scope macro_name to its parents:
+; it also occurs inside plain (word) nodes.
+[
+  (attribute_reference)
+  (email)
+  (id)
+  (id_assignment)
+  (link_url)
+  (named_attr)
+  (role)
+  (target)
+] @nospell
+
+(inline_macro
+  (macro_name) @nospell)
+
+(footnote
+  (macro_name) @nospell)
+
+(stem_macro
+  (macro_name) @nospell)
+
+; These take keys and UI labels, not prose.
+((inline_macro
+  (macro_name) @_name
+  (attr) @nospell)
+  (#any-of? @_name "kbd" "btn" "menu" "icon"))

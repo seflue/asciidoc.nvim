@@ -1,0 +1,33 @@
+= Titel tyypo
+:imagesdir: assets/imgzz
+
+[[ankerr]]
+== Headding tyypo
+
+A paragrph with xref:zielseite.adoc#ankerr[targett text] and <<ankerr,lable text>>.
+
+Reference {attrr-namee} and https://exmaple.org/pfadd[linktextt] or adressee@exmaple.org.
+
+Press kbd:[Strgg] and btn:[Speichrn] then image:bildchen.png[alttextt,width=100].
+
+A [.klassenname]#hilited# word, `monospce` and *boldd*.
+
+* list iteem
+
+.Block titell
+[source,rust]
+----
+fn mainn() {}
+----
+
+include::teilstueck.adoc[leveloffset=+1]
+
+image::grossbild.png[grossalt]
+
+|===
+| Zellee xref:zelle.adoc[zellentextt]
+|===
+
+// a commment
+
+NOTE: An admonitoin.

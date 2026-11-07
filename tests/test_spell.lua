@@ -1,0 +1,63 @@
+local helpers = require("helpers")
+local expect = MiniTest.expect
+
+local child = helpers.new_child()
+
+local T = MiniTest.new_set({
+    hooks = {
+        pre_case = child.setup,
+        post_once = child.stop,
+    },
+})
+
+--- Walk the buffer with `]s` and return every word Neovim treats as misspelled.
+local function misspelled_words()
+    return child.lua_get([[(function()
+        vim.treesitter.get_parser(0):parse(true)
+        vim.o.spelllang = "en"
+        vim.o.wrapscan = false
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+        local words, previous = {}, nil
+        for _ = 1, 200 do
+            pcall(vim.cmd, "silent normal! ]s")
+            local pos = vim.api.nvim_win_get_cursor(0)
+            local key = pos[1] .. ":" .. pos[2]
+            if key == previous then
+                break
+            end
+            previous = key
+            words[#words + 1] = vim.fn.spellbadword()[1]
+        end
+        return words
+    end)()]])
+end
+
+T["starts treesitter highlighting for asciidoc buffers"] = function()
+    child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/spell.adoc")
+    expect.equality(child.lua_get("vim.treesitter.highlighter.active[vim.api.nvim_get_current_buf()] ~= nil"), true)
+end
+
+T["spellchecks prose and skips AsciiDoc syntax"] = function()
+    child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/spell.adoc")
+    expect.equality(misspelled_words(), {
+        "Titel",
+        "tyypo",
+        "Headding",
+        "tyypo",
+        "paragrph",
+        "targett",
+        "lable",
+        "linktextt",
+        "alttextt",
+        "hilited",
+        "boldd",
+        "iteem",
+        "titell",
+        "Zellee",
+        "zellentextt",
+        "commment",
+        "admonitoin",
+    })
+end
+
+return T
