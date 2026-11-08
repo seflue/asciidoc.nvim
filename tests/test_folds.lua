@@ -10,13 +10,13 @@ local T = MiniTest.new_set({
     },
 })
 
-T["folds each section including nested ones, and delimited blocks"] = function()
+T["folds each section including nested ones and its anchor, and delimited blocks"] = function()
     child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/sections.adoc")
     expect.equality(helpers.capture_ranges(child, "folds", "fold"), {
         { 2, 0, 14, 0 },
         { 7, 0, 9, 4 },
         { 11, 0, 14, 0 },
-        { 15, 0, 18, 0 },
+        { 15, 0, 19, 0 },
     })
 end
 

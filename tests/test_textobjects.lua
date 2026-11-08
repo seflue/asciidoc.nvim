@@ -10,12 +10,12 @@ local T = MiniTest.new_set({
     },
 })
 
-T["@section.outer spans each section including nested ones"] = function()
+T["@section.outer spans each section including nested ones and its anchor"] = function()
     child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/sections.adoc")
     expect.equality(helpers.capture_ranges(child, "textobjects", "section.outer"), {
         { 2, 0, 14, 0 },
         { 11, 0, 14, 0 },
-        { 15, 0, 18, 0 },
+        { 15, 0, 19, 0 },
     })
 end
 
@@ -24,7 +24,7 @@ T["@section.inner spans each section's content after the title"] = function()
     expect.equality(helpers.capture_ranges(child, "textobjects", "section.inner"), {
         { 5, 0, 14, 0 },
         { 13, 0, 14, 0 },
-        { 17, 0, 18, 0 },
+        { 18, 0, 19, 0 },
     })
 end
 
