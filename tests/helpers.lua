@@ -27,4 +27,37 @@ function Helpers.edit_with_lsp(child, path)
     end
 end
 
+--- Return the sorted `{ start_row, start_col, end_row, end_col }` ranges the
+--- asciidoc `query_name` query yields for `capture` in the child's buffer. A
+--- quantified capture spans from its first to its last node, as
+--- nvim-treesitter-textobjects resolves it.
+function Helpers.capture_ranges(child, query_name, capture)
+    return child.lua_get(
+        [[(function(query_name, capture)
+        local root = vim.treesitter.get_parser(0):parse()[1]:root()
+        local query = vim.treesitter.query.get("asciidoc", query_name)
+        local ranges = {}
+        for _, match in query:iter_matches(root, 0) do
+            for id, nodes in pairs(match) do
+                if query.captures[id] == capture then
+                    local srow, scol = nodes[1]:range()
+                    local _, _, erow, ecol = nodes[#nodes]:range()
+                    ranges[#ranges + 1] = { srow, scol, erow, ecol }
+                end
+            end
+        end
+        table.sort(ranges, function(a, b)
+            for i = 1, 4 do
+                if a[i] ~= b[i] then
+                    return a[i] < b[i]
+                end
+            end
+            return false
+        end)
+        return ranges
+    end)(...)]],
+        { query_name, capture }
+    )
+end
+
 return Helpers

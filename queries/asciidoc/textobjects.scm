@@ -1,19 +1,29 @@
 ; textobjects.scm for asciidoc (block-level grammar)
 ; asciidoc.nvim — Compatible with nvim-treesitter-textobjects
-; Parser: cathaysia/tree-sitter-asciidoc
+; Parser: seflue/tree-sitter-asciidoc (develop)
 
 ; =============================================================================
 ; --- Sections ---
 ; =============================================================================
 
-; @section.outer — entire section (header + content)
-(section_block) @section.outer
+; @section.outer — entire section (header + content, nested sections included)
+(section) @section.outer
 
 ; @section.inner — section content without title
-; Requires :InspectTree validation of section_block's child nodes.
-; The cathaysia grammar's exact children (title node type, content wrapper)
-; are unverified — a wrong pattern here blocks the entire parser (see spike
-; adoc-0076, Erkenntnis 4). Add the pattern once node structure is confirmed.
+; Block attributes, block titles or comments may precede the title inside the
+; section, so anchor on the title itself; the quantified capture spans from
+; the first to the last node after it. A section with only a title has no
+; inner range.
+(section
+  [
+    (title1)
+    (title2)
+    (title3)
+    (title4)
+    (title5)
+  ]
+  .
+  (_)+ @section.inner)
 
 ; =============================================================================
 ; --- Delimiter Blocks ---

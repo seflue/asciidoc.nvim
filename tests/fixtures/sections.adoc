@@ -1,0 +1,18 @@
+Preamble paragraph.
+
+[appendix]
+== First Section
+
+First paragraph.
+
+----
+listing
+----
+
+=== Nested Section
+
+Nested paragraph.
+
+== Second Section
+
+Second paragraph.
