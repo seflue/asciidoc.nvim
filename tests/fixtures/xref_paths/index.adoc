@@ -1,0 +1,5 @@
+= Index
+
+See xref:chapters/
+
+== Goals
