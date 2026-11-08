@@ -15,6 +15,10 @@ do
     end
 end
 
+vim.api.nvim_create_user_command("AsciidocDebug", function()
+    require("asciidoc.debug").run()
+end, { desc = "Show how asciidoc-lsp resolves the cursor position" })
+
 -- Treesitter Grammar Registration for cathaysia dual-grammar
 -- (asciidoc + asciidoc_inline)
 --

@@ -1,0 +1,10 @@
+= Debug fixture
+:product: Widget
+
+Uses {product} here.
+
+See xref:basic.adoc[the basic fixture].
+
+include::basic.adoc[]
+
+Plain text without references.

@@ -13,10 +13,13 @@ function Helpers.new_child()
     return child
 end
 
---- Open `path` (relative to the plugin root) in the child and wait until
---- asciidoc-lsp has attached and finished initializing.
+--- Open `path` (absolute, or relative to the plugin root) in the child and
+--- wait until asciidoc-lsp has attached and finished initializing.
 function Helpers.edit_with_lsp(child, path)
-    child.cmd("edit " .. root .. "/" .. path)
+    if not vim.startswith(path, "/") then
+        path = root .. "/" .. path
+    end
+    child.cmd("edit " .. vim.fn.fnameescape(path))
     local attached = child.lua_get([[vim.wait(10000, function()
         local client = vim.lsp.get_clients({ bufnr = 0, name = "asciidoc" })[1]
         return client ~= nil and client.initialized

@@ -61,6 +61,34 @@ function M.check()
             'Install nvim-treesitter for :TSInstall support',
         })
     end
+
+    -- 7. Loaded asciidoc buffers with asciidoc-lsp attached. :checkhealth
+    -- runs in its own tab, so every such buffer is reported, not the current.
+    vim.health.start('asciidoc.nvim: language server')
+    local reported = false
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+        local clients = vim.lsp.get_clients({ bufnr = bufnr, name = 'asciidoc' })
+        if vim.api.nvim_buf_is_loaded(bufnr) and vim.bo[bufnr].filetype == 'asciidoc' and #clients > 0 then
+            reported = true
+            local path = vim.api.nvim_buf_get_name(bufnr)
+            local attached = {}
+            for _, client in ipairs(clients) do
+                attached[#attached + 1] =
+                    string.format('%s (root_dir: %s)', client.name, client.root_dir or 'none')
+            end
+            vim.health.ok(path .. ': ' .. table.concat(attached, ', '))
+            local real = vim.uv.fs_realpath(path)
+            if real and real ~= path then
+                vim.health.warn(path .. ' resolves to ' .. real, {
+                    'asciidoc-lsp may index this file under its real path;'
+                        .. ' if navigation fails here, open the file by its real path',
+                })
+            end
+        end
+    end
+    if not reported then
+        vim.health.info('No loaded asciidoc buffer has asciidoc-lsp attached')
+    end
 end
 
 return M
