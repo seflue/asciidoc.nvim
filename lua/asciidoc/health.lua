@@ -89,6 +89,19 @@ function M.check()
     if not reported then
         vim.health.info('No loaded asciidoc buffer has asciidoc-lsp attached')
     end
+
+    -- 8. File watching backend. On Linux, Neovim watches with inotifywait
+    -- if it is executable, else with a fallback that reports
+    -- no changes in subdirectories.
+    if vim.fn.has('linux') == 1 then
+        if vim.fn.executable('inotifywait') == 1 then
+            vim.health.ok('inotifywait found: changes on disk reach asciidoc-lsp')
+        else
+            vim.health.warn('inotifywait not found: asciidoc-lsp misses changes on disk in subdirectories', {
+                'Install inotify-tools',
+            })
+        end
+    end
 end
 
 return M

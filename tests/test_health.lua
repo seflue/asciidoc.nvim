@@ -59,6 +59,38 @@ T["warns when the buffer path is not the real path"] = function()
     expect.equality(warning[1]:find(root .. "/real/doc.adoc", 1, true) ~= nil, true)
 end
 
+--- Point the child's PATH at a fresh directory, with an executable
+--- `inotifywait` in it if `with_inotifywait`.
+local function path_with(with_inotifywait)
+    local bin = vim.fn.tempname()
+    vim.fn.mkdir(bin, "p")
+    if with_inotifywait then
+        vim.fn.writefile({ "#!/bin/sh" }, bin .. "/inotifywait")
+        vim.uv.fs_chmod(bin .. "/inotifywait", tonumber("755", 8))
+    end
+    child.lua("vim.env.PATH = ...", { bin })
+end
+
+T["warns when inotifywait is missing"] = function()
+    if vim.fn.has("linux") == 0 then
+        MiniTest.skip("inotifywait only matters on Linux")
+    end
+    path_with(false)
+    local warning = lines_matching(checkhealth_lines(), "inotifywait")
+    expect.equality(#warning, 1)
+    expect.equality(warning[1]:find("WARNING", 1, true) ~= nil, true)
+end
+
+T["reports inotifywait when present"] = function()
+    if vim.fn.has("linux") == 0 then
+        MiniTest.skip("inotifywait only matters on Linux")
+    end
+    path_with(true)
+    local entry = lines_matching(checkhealth_lines(), "inotifywait")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("OK", 1, true) ~= nil, true)
+end
+
 T["says when no asciidoc buffer has the server attached"] = function()
     local lines = checkhealth_lines()
     expect.equality(#lines_matching(lines, "No loaded asciidoc buffer has asciidoc-lsp attached"), 1)

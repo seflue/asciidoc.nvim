@@ -13,6 +13,7 @@ REQUIREMENTS                                    *asciidoc.nvim-requirements*
 - Neovim >= 0.11
 - nvim-treesitter (for `:TSInstall`)
 - asciidoc-lsp binary in `$PATH` (for LSP features)
+- inotify-tools on Linux (recommended, see |asciidoc.nvim-file-watching|)
 
 Install parsers after plugin setup: >
     :TSInstall asciidoc asciidoc_inline
@@ -70,6 +71,25 @@ Override with `vim.lsp.config()` before enabling: >lua
     vim.lsp.enable('asciidoc')
 <
 
+                                              *asciidoc.nvim-file-watching*
+The LSP config lets `asciidoc-lsp` watch `.asciidoctorconfig` and `.adoc`
+files (`workspace.didChangeWatchedFiles.dynamicRegistration`), so changes
+on disk (another editor, `git checkout`) reach the server without a
+restart. On Linux, install `inotify-tools`: without
+`inotifywait`, Neovim falls back to a watcher that reports changes in
+the workspace root but none in subdirectories. To turn watching off: >lua
+    vim.lsp.config('asciidoc', {
+        capabilities = {
+            workspace = { didChangeWatchedFiles = { dynamicRegistration = false } },
+        },
+    })
+<
+A complete `capabilities` table that includes Neovim's defaults (for
+example from |vim.lsp.protocol.make_client_capabilities()| or a completion
+plugin) turns watching off as well: on Linux and BSD those defaults set
+`dynamicRegistration = false`. Set it to `true` in that table to keep
+watching.
+
 ==============================================================================
 TREESITTER                                        *asciidoc.nvim-treesitter*
 
@@ -110,6 +130,8 @@ Run `:checkhealth asciidoc` to verify the setup. Checks:
 7. Every loaded asciidoc buffer with `asciidoc-lsp` attached: buffer path,
    client name and `root_dir`. Warns when the buffer path is not the file's
    real path (opened through a symlink).
+8. `inotifywait` executable (Linux only), see
+   |asciidoc.nvim-file-watching|.
 
 ==============================================================================
 DEBUGGING                                          *asciidoc.nvim-debug*
