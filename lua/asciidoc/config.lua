@@ -1,8 +1,14 @@
 local defaults = {
     treesitter = {
         auto_install = false,
-        -- Override grammar source (e.g. local fork with fixes)
-        -- Example: { url = "/path/to/fork", branch = "my-fix" }
+        -- Override grammar source (e.g. fork with fixes). Without an
+        -- override the parsers are pinned to the commit the bundled queries
+        -- are written for (lua/asciidoc/grammar.lua). A url or branch
+        -- override drops that pin unless it also sets a revision; a path
+        -- override (local checkout, built as it is) always drops it.
+        -- Example: { url = "https://github.com/you/tree-sitter-asciidoc", branch = "my-fix" }
+        --          { path = "/path/to/tree-sitter-asciidoc" }
+        --          { revision = "<full commit SHA>" }
         asciidoc = nil,
         asciidoc_inline = nil,
     },

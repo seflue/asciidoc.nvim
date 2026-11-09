@@ -4,8 +4,10 @@
 # the asciidoc-lsp repo:
 #   ASCIIDOC_LSP_CMD=$(just -f asciidoc-lsp/justfile bin-path) just -f asciidoc.nvim/justfile test
 
-# Grammar commit the bundled queries were taken from
-grammar_rev := "34e2923"
+# Grammar the bundled queries are written for, read from
+# lua/asciidoc/grammar.lua (the single source of truth)
+grammar_url := `sed -n 's/^ *url = "\(.*\)",$/\1/p' lua/asciidoc/grammar.lua`
+grammar_rev := `sed -n 's/^ *revision = "\([0-9a-f]*\)",$/\1/p' lua/asciidoc/grammar.lua`
 
 default:
     @just --list
@@ -17,7 +19,7 @@ deps:
 # Build the asciidoc parsers into deps/site/ if missing or built from
 # another grammar_rev (needs the tree-sitter CLI)
 parsers:
-    @test -d deps/tree-sitter-asciidoc || git clone --filter=blob:none https://github.com/seflue/tree-sitter-asciidoc deps/tree-sitter-asciidoc
+    @test -d deps/tree-sitter-asciidoc || git clone --filter=blob:none {{grammar_url}} deps/tree-sitter-asciidoc
     @git -C deps/tree-sitter-asciidoc cat-file -e {{grammar_rev}}^{commit} 2>/dev/null || git -C deps/tree-sitter-asciidoc fetch --quiet origin
     @git -C deps/tree-sitter-asciidoc checkout --quiet --detach {{grammar_rev}}
     @mkdir -p deps/site/parser

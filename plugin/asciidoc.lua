@@ -41,38 +41,23 @@ end
 vim.api.nvim_create_autocmd("User", {
     pattern = "TSUpdate",
     callback = function()
-        local config = require("asciidoc.config")
+        local grammar = require("asciidoc.grammar")
         local parsers = require("nvim-treesitter.parsers")
 
-        local upstream = {
-            url = "https://github.com/seflue/tree-sitter-asciidoc",
-            branch = "develop",
-        }
-
-        local adoc_override = config.treesitter.asciidoc or {}
         parsers.asciidoc = {
-            install_info = {
-                url = adoc_override.url or upstream.url,
-                branch = adoc_override.branch or upstream.branch,
-                location = "tree-sitter-asciidoc",
-            },
+            install_info = grammar.install_info("asciidoc"),
             filetype = "asciidoc",
             requires = { "asciidoc_inline" },
             tier = 2,
         }
 
-        local inline_override = config.treesitter.asciidoc_inline or {}
         parsers.asciidoc_inline = {
-            install_info = {
-                url = inline_override.url or upstream.url,
-                branch = inline_override.branch or upstream.branch,
-                location = "tree-sitter-asciidoc_inline",
-            },
+            install_info = grammar.install_info("asciidoc_inline"),
             tier = 2,
         }
 
         -- Auto-install both parsers (asciidoc + asciidoc_inline) when user opted in
-        if config.treesitter.auto_install then
+        if require("asciidoc.config").treesitter.auto_install then
             vim.schedule(function()
                 local install_ok, install = pcall(require, "nvim-treesitter.install")
                 if install_ok then
