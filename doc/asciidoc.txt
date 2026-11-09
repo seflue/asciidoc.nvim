@@ -58,6 +58,9 @@ Default values: >lua
         treesitter = {
             auto_install = false,  -- auto-install parsers if missing
         },
+        textobjects = {
+            enable = true,  -- `iS` / `aS`, see |asciidoc.nvim-textobjects|
+        },
     }
 <
 
@@ -112,9 +115,45 @@ Bundled queries in `queries/asciidoc/` and `queries/asciidoc_inline/`:
   `injections.scm`     Inline injection + source block languages
   `textobjects.scm`    Section/block selection (nvim-treesitter-textobjects)
 
-Textobjects (requires nvim-treesitter-textobjects):
-  `vas` / `vis`        Select around/inner section
+Block textobjects (requires nvim-treesitter-textobjects):
   `vab` / `vib`        Select around/inner delimiter block
+
+Section text objects are mapped by the plugin itself, see
+|asciidoc.nvim-textobjects|.
+
+==============================================================================
+TEXT OBJECTS                                    *asciidoc.nvim-textobjects*
+
+                                                        *asciidoc.nvim-iS*
+                                                        *asciidoc.nvim-aS*
+In AsciiDoc buffers the plugin maps two section text objects in Visual and
+Operator-pending mode (buffer-local):
+
+  `iS`    inside section: the content below the heading
+  `aS`    around section: the heading with its content, including block
+          anchors and attributes above the heading
+
+Both select whole lines and take the innermost section around the cursor
+(in Visual mode: around the top of the selection), nested sections
+included. With a count they take the section that many levels out, so
+`2aS` in a subsection selects its parent. Outside any section, past the
+outermost one, or for `iS` on a section that is only a heading, they
+select nothing and cancel a pending operator; repeating with |.| there
+reports "No section here". Examples: `daS` deletes a section, `yiS`
+yanks its content, `.` repeats on the section under the cursor.
+
+They use the bundled `textobjects.scm` query (`@section.inner`,
+`@section.outer`) through |vim.treesitter| and need the `asciidoc` parser
+only. They work with or without mini.ai and nvim-treesitter-textobjects.
+The plugin does not map the sentence objects |is| and |as|.
+
+With mini.ai, `a` and `i` are mapped globally as well: type `S` within
+'timeoutlen', otherwise mini.ai takes the `a` or `i` and rejects `S`.
+
+To turn them off: >lua
+    vim.g.asciidoc = { textobjects = { enable = false } }
+<
+Set this before the plugin loads (for example in lazy.nvim's `init`).
 
 ==============================================================================
 HEALTH CHECK                                    *asciidoc.nvim-health*

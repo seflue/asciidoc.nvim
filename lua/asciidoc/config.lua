@@ -11,6 +11,10 @@ local defaults = {
         -- Set to false if you prefer to call `vim.lsp.enable("asciidoc")` yourself.
         enable = true,
     },
+    textobjects = {
+        -- Map `iS` / `aS` (inside / around section) in AsciiDoc buffers.
+        enable = true,
+    },
 }
 
 local user_config = vim.g.asciidoc or {}
