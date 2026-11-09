@@ -55,15 +55,14 @@ vim.api.nvim_create_autocmd("User", {
             install_info = grammar.install_info("asciidoc_inline"),
             tier = 2,
         }
-
-        -- Auto-install both parsers (asciidoc + asciidoc_inline) when user opted in
-        if require("asciidoc.config").treesitter.auto_install then
-            vim.schedule(function()
-                local install_ok, install = pcall(require, "nvim-treesitter.install")
-                if install_ok then
-                    install.ensure_installed({ "asciidoc", "asciidoc_inline" })
-                end
-            end)
-        end
     end,
 })
+
+-- Auto-install both parsers when the user opted in, at load and not in the
+-- TSUpdate callback: nvim-treesitter fires TSUpdate on every install and
+-- update, so installing from there would loop.
+if require("asciidoc.config").treesitter.auto_install then
+    vim.schedule(function()
+        require("asciidoc.grammar").auto_install()
+    end)
+end

@@ -34,4 +34,56 @@ function M.install_info(lang)
     }
 end
 
+M.languages = { "asciidoc", "asciidoc_inline" }
+
+--- Revision nvim-treesitter recorded when it built `lang`, or nil when
+--- nvim-treesitter is absent or did not build it.
+function M.installed_revision(lang)
+    local ok, ts_config = pcall(require, "nvim-treesitter.config")
+    if not ok then
+        return nil
+    end
+    local path = vim.fs.joinpath(ts_config.get_install_dir("parser-info"), lang .. ".revision")
+    local file = io.open(path, "r")
+    if not file then
+        return nil
+    end
+    local revision = vim.trim(file:read("*a"))
+    file:close()
+    return revision
+end
+
+--- Through nvim-treesitter (main branch API): install missing parsers and
+--- rebuild those built from another revision than `install_info` names.
+--- On nvim-treesitter's master branch, which lacks that API, warn instead.
+function M.auto_install()
+    local ts = require("nvim-treesitter")
+    if type(ts.get_installed) ~= "function" then
+        vim.notify(
+            "asciidoc.nvim: auto_install needs nvim-treesitter's main branch;"
+                .. " install the parsers with :TSInstall asciidoc asciidoc_inline",
+            vim.log.levels.WARN
+        )
+        return
+    end
+    local installed = ts.get_installed("parsers")
+    local missing, stale = {}, {}
+    for _, lang in ipairs(M.languages) do
+        if not vim.list_contains(installed, lang) then
+            missing[#missing + 1] = lang
+        else
+            local expected = M.install_info(lang).revision
+            if expected and M.installed_revision(lang) ~= expected then
+                stale[#stale + 1] = lang
+            end
+        end
+    end
+    if #missing > 0 then
+        ts.install(missing)
+    end
+    if #stale > 0 then
+        ts.update(stale)
+    end
+end
+
 return M

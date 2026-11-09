@@ -96,6 +96,100 @@ T["overrides"]["url and revision keep both"] = function()
     expect.equality(parsers.asciidoc.install_info.revision, "abc123")
 end
 
+--- Stub nvim-treesitter's main API in the child: `installed` parsers, each
+--- built from the revision in `revisions` (written to its parser-info
+--- directory). install/update record their calls and fire `User TSUpdate`
+--- as the real ones do. Then load the plugin with `config` and let its
+--- scheduled work run. Returns the recorded calls. With `branch` "master"
+--- the stub has the frozen master branch's module shape instead, which
+--- lacks the main API; notifications land in `_G.notified`.
+local function auto_install(config, installed, revisions, branch)
+    child.lua(
+        [[
+        local config, installed, revisions, dir, branch = ...
+        vim.g.asciidoc = config
+        package.loaded["asciidoc.config"] = nil
+        _G.calls = {}
+        _G.notified = {}
+        vim.notify = function(msg, level)
+            table.insert(_G.notified, { msg, level })
+        end
+        local parsers = {}
+        local function record(name)
+            return function(langs)
+                table.insert(_G.calls, { name, langs })
+                vim.api.nvim_exec_autocmds("User", { pattern = "TSUpdate" })
+            end
+        end
+        package.preload["nvim-treesitter"] = function()
+            if branch == "master" then
+                return { setup = function() end }
+            end
+            return {
+                get_installed = function() return installed end,
+                install = record("install"),
+                update = record("update"),
+            }
+        end
+        package.preload["nvim-treesitter.parsers"] = function() return parsers end
+        package.preload["nvim-treesitter.config"] = function()
+            return {
+                get_install_dir = function(name)
+                    local path = dir .. "/" .. name
+                    vim.fn.mkdir(path, "p")
+                    return path
+                end,
+            }
+        end
+        vim.fn.mkdir(dir .. "/parser-info", "p")
+        for lang, rev in pairs(revisions) do
+            vim.fn.writefile({ rev }, dir .. "/parser-info/" .. lang .. ".revision")
+        end
+        vim.cmd.source(vim.g.asciidoc_nvim_root .. "/plugin/asciidoc.lua")
+        vim.wait(100)
+    ]],
+        { config, installed, revisions, vim.fn.tempname(), branch or "main" }
+    )
+    expect.equality(child.lua_get("vim.v.errmsg"), "")
+    return child.lua_get("_G.calls")
+end
+
+local AUTO = { treesitter = { auto_install = true } }
+
+T["auto_install"] = MiniTest.new_set()
+
+T["auto_install"]["installs missing parsers once"] = function()
+    expect.equality(auto_install(AUTO, {}, vim.empty_dict()), { { "install", LANGS } })
+end
+
+T["auto_install"]["leaves parsers built from the pin alone"] = function()
+    local pin = grammar().revision
+    local calls = auto_install(AUTO, LANGS, { asciidoc = pin, asciidoc_inline = pin })
+    expect.equality(calls, {})
+end
+
+T["auto_install"]["rebuilds parsers built from another revision"] = function()
+    local calls = auto_install(AUTO, LANGS, { asciidoc = "develop", asciidoc_inline = grammar().revision })
+    expect.equality(calls, { { "update", { "asciidoc" } } })
+end
+
+T["auto_install"]["does nothing unless enabled"] = function()
+    local calls = auto_install(vim.empty_dict(), {}, vim.empty_dict())
+    expect.equality(calls, {})
+    expect.equality(child.lua_get("_G.notified"), {})
+end
+
+-- The main API (get_installed/install/update) is missing on master; the
+-- plugin warns once at load instead of raising an error at every startup.
+T["auto_install"]["warns instead of failing on nvim-treesitter master"] = function()
+    local calls = auto_install(AUTO, {}, vim.empty_dict(), "master")
+    expect.equality(calls, {})
+    local notified = child.lua_get("_G.notified")
+    expect.equality(#notified, 1)
+    expect.equality(notified[1][2], vim.log.levels.WARN)
+    expect.equality(notified[1][1]:find(":TSInstall asciidoc asciidoc_inline", 1, true) ~= nil, true)
+end
+
 -- The test parsers in deps/site are built from the justfile's grammar_rev,
 -- so the query tests run against the pinned grammar only if both agree.
 T["builds the test parsers from the pinned revision"] = function()
