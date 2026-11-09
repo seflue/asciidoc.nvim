@@ -22,4 +22,14 @@ T["highlights a block anchor's brackets, id and reftext"] = function()
     expect.equality(ranges("markup.link.label"), { { 15, 9, 15, 20 } })
 end
 
+T["highlights only a complete attribute entry's name, not a `:to` line"] = function()
+    child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/attribute_entries.adoc")
+    expect.equality(helpers.capture_ranges(child, "highlights", "property"), { { 7, 1, 7, 5 } })
+end
+
+T["highlights the attribute entry after a `:to` line in the header"] = function()
+    child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/attribute_header.adoc")
+    expect.equality(helpers.capture_ranges(child, "highlights", "property"), { { 2, 1, 2, 4 } })
+end
+
 return T

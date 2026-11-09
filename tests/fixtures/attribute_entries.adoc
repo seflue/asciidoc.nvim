@@ -1,0 +1,12 @@
+== Probes
+
+:to
+// Expected: completion offers toc
+
+=== Settings
+
+:mode: draft
+
+==== Deep
+
+Text.

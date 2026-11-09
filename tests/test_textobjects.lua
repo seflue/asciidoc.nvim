@@ -213,4 +213,21 @@ T["section keymaps are not mapped when turned off"] = function()
     end
 end
 
+T["@section.outer spans a section past an attribute entry in its body"] = function()
+    child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/attribute_entries.adoc")
+    expect.equality(helpers.capture_ranges(child, "textobjects", "section.outer"), {
+        { 0, 0, 12, 0 },
+        { 5, 0, 12, 0 },
+        { 9, 0, 12, 0 },
+    })
+end
+
+T["@section.outer finds the first section after a `:to` line in the header"] = function()
+    child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/attribute_header.adoc")
+    expect.equality(helpers.capture_ranges(child, "textobjects", "section.outer"), {
+        { 4, 0, 11, 0 },
+        { 8, 0, 11, 0 },
+    })
+end
+
 return T

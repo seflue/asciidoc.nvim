@@ -1,0 +1,11 @@
+= Header probe
+:to
+:toc:
+
+== Before
+
+Text.
+
+=== After
+
+Text.
