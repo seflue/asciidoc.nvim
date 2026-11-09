@@ -1,6 +1,6 @@
--- Completion after `xref:` with Neovim's built-in client (omnifunc and
--- vim.lsp.completion). The buffer's 'iskeyword' contains `:` but not `/`, so
--- the client's own guess of the typed word would be wrong; these tests pin
+-- Completion after `xref:` and `<<` with Neovim's built-in client (omnifunc
+-- and vim.lsp.completion). The buffer's 'iskeyword' contains `:` but not `/`,
+-- so the client's own guess of the typed word would be wrong; these tests pin
 -- that the server's edits replace the whole typed target.
 local helpers = require("helpers")
 local expect = MiniTest.expect
@@ -8,7 +8,8 @@ local expect = MiniTest.expect
 local child = helpers.new_child()
 
 -- Line 3 of the fixture is the line under test; `chapters/` holds
--- 01_intro.adoc and 02_more.adoc, and the document has a `== Goals` section.
+-- 01_intro.adoc (with an `== Aims` section) and 02_more.adoc, and the
+-- document has a `== Goals` section.
 local fixture = "tests/fixtures/xref_paths/index.adoc"
 
 local T = MiniTest.new_set({
@@ -70,6 +71,12 @@ local cases = {
     },
     { typed = "See xref:chap", first = "chapters/", accepted = "See xref:chapters/" },
     { typed = "See xref:_go", first = "_goals", accepted = "See xref:_goals[label]" },
+    { typed = "See <<_go", first = "_goals", accepted = "See <<_goals>>" },
+    {
+        typed = "See <<chapters/01_intro.adoc#",
+        first = "_aims",
+        accepted = "See <<chapters/01_intro.adoc#_aims>>",
+    },
 }
 
 for _, mode in ipairs({ "omnifunc", "vim.lsp.completion" }) do

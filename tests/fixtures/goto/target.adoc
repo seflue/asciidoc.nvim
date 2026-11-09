@@ -1,0 +1,7 @@
+= Target
+
+Intro text.
+
+== Details
+
+Detail text.

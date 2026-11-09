@@ -1,0 +1,3 @@
+= Goto
+
+See xref:target.adoc#_details[the details].
