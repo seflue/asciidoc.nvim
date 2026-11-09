@@ -86,6 +86,44 @@ T["render"]["says so when no reference is under the cursor"] = function()
     })
 end
 
+-- A report line may not contain a newline: nvim_buf_set_lines rejects
+-- such items. The server can send names that span lines.
+T["render"]["escapes newlines in table cells"] = function()
+    local report = {
+        known_attributes = {
+            { name = "to\n// Expected", value = "a\r\nb", layer = "per_file", source = vim.NIL },
+        },
+    }
+
+    local lines = require("asciidoc.debug").render(report, ctx)
+    expect.equality(lines[#lines], "| to\\n// Expected | a\\r\\nb | per_file |  |")
+end
+
+-- GFM reads `\\|` as an escaped backslash and a cell boundary, so a value
+-- ending in a backslash would split its row unless the backslash is
+-- escaped too.
+T["render"]["escapes backslashes in table cells"] = function()
+    local report = {
+        known_attributes = {
+            { name = "dir", value = "C:\\", layer = "per_file", source = vim.NIL },
+        },
+    }
+
+    local lines = require("asciidoc.debug").render(report, ctx)
+    expect.equality(lines[#lines], "| dir | C:\\\\ | per_file |  |")
+end
+
+T["render"]["escapes newlines in field values"] = function()
+    local report = { resolution = { name = "to\n// Expected" } }
+
+    local lines = require("asciidoc.debug").render(report, ctx)
+    expect.equality(vim.list_slice(lines, 13, 15), {
+        "## Resolution",
+        "",
+        "- name: `to\\n// Expected`",
+    })
+end
+
 local helpers = require("helpers")
 local child = helpers.new_child()
 

@@ -3,11 +3,18 @@
 
 local M = {}
 
+--- Spell out line breaks as `\n` and `\r`: a report line may not contain
+--- one (nvim_buf_set_lines rejects it), and the server can send values
+--- that span lines.
+local function escape_breaks(text)
+    return (text:gsub("\n", "\\n"):gsub("\r", "\\r"))
+end
+
 local function scalar(value)
     if value == nil or value == vim.NIL then
         return "`null`"
     end
-    return "`" .. tostring(value) .. "`"
+    return "`" .. escape_breaks(tostring(value)) .. "`"
 end
 
 local function sorted_keys(tbl)
@@ -48,7 +55,9 @@ local function cell(value)
     if value == nil or value == vim.NIL then
         return ""
     end
-    return (tostring(value):gsub("|", "\\|"))
+    -- Backslashes first: GFM reads `\\|` as a backslash and a cell boundary.
+    local text = tostring(value):gsub("\\", "\\\\"):gsub("|", "\\|")
+    return escape_breaks(text)
 end
 
 local function append_known_attributes(lines, attributes)
