@@ -18,6 +18,10 @@ REQUIREMENTS                                    *asciidoc.nvim-requirements*
 Install parsers after plugin setup: >
     :TSInstall asciidoc asciidoc_inline
 <
+After each plugin update, update them from an AsciiDoc buffer (see
+|asciidoc.nvim-parser-pin|): >
+    :TSUpdate asciidoc asciidoc_inline
+<
 
 ==============================================================================
 INSTALLATION                                    *asciidoc.nvim-installation*
@@ -56,7 +60,13 @@ Plugin settings via `vim.g.asciidoc`. No `setup()` call needed.
 Default values: >lua
     vim.g.asciidoc = {
         treesitter = {
-            auto_install = false,  -- auto-install parsers if missing
+            -- Install missing parsers and rebuild ones built from
+            -- another revision, see |asciidoc.nvim-parser-pin|
+            auto_install = false,
+            -- Grammar source per parser, see |asciidoc.nvim-parser-pin|
+            asciidoc = nil,  -- { url = ..., branch = ..., revision = ... }
+                             -- or { path = ... }
+            asciidoc_inline = nil,
         },
         textobjects = {
             enable = true,  -- `iS` / `aS`, see |asciidoc.nvim-textobjects|
@@ -104,6 +114,50 @@ The plugin registers the seflue AsciiDoc grammars with nvim-treesitter:
 Inline content is injected via `injections.scm` (paragraph lines).
 Source blocks take their language from `[source,<lang>]`, diagram
 blocks from their style (e.g. `[mermaid]`).
+
+                                                 *asciidoc.nvim-parser-pin*
+The bundled queries are written for one tree-sitter-asciidoc commit, and
+the plugin pins both parsers to it (`lua/asciidoc/grammar.lua`). A parser
+built from another commit can lack a node the queries name; Neovim then
+rejects the whole query file and, for `highlights.scm`, highlights
+nothing. nvim-treesitter rebuilds a pinned parser on `:TSUpdate` once the
+pin differs from the revision it was built from, but `:TSInstall` skips a
+parser that is already installed. So after each plugin update run, with
+an AsciiDoc buffer open (nvim-treesitter only knows the parsers once the
+plugin is loaded): >
+    :TSUpdate asciidoc asciidoc_inline
+<
+and restart Neovim, which keeps a loaded parser for the session.
+`:checkhealth asciidoc` reports a parser the queries do not fit, see
+|asciidoc.nvim-health|.
+
+With `auto_install = true` the plugin does this itself when it loads (on
+nvim-treesitter's `main` branch): it installs missing parsers and updates
+those nvim-treesitter built from another revision. On nvim-treesitter's
+`master` branch it only warns.
+
+To build from another source, override it per parser: >lua
+    vim.g.asciidoc = {
+        treesitter = {
+            asciidoc = {
+                url = 'https://github.com/you/tree-sitter-asciidoc',
+                branch = 'my-fix',
+            },
+            asciidoc_inline = { revision = '<full commit SHA>' },
+        },
+    }
+<
+`revision` replaces the pin and must be a full commit SHA. A `url` or
+`branch` override without `revision` drops the pin, because
+nvim-treesitter prefers a revision to a branch and a fork may not contain
+the pinned commit. `url` must be a GitHub-style remote: nvim-treesitter
+downloads `<url>/archive/<revision or branch>.tar.gz`. For a local
+checkout set `path` to the repository root instead; nvim-treesitter then
+builds the checkout as it is, without a pin: >lua
+    asciidoc = { path = '/path/to/tree-sitter-asciidoc' },
+<
+Without a pin, `:TSUpdate` does not rebuild the parser; reinstall it with
+`:TSInstall! asciidoc asciidoc_inline`.
 
 ==============================================================================
 QUERIES                                            *asciidoc.nvim-queries*
@@ -165,11 +219,18 @@ Run `:checkhealth asciidoc` to verify the setup. Checks:
 3. Treesitter ABI version
 4. Treesitter parser `asciidoc` installed
 5. Treesitter parser `asciidoc_inline` installed
-6. nvim-treesitter plugin available (optional)
-7. Every loaded asciidoc buffer with `asciidoc-lsp` attached: buffer path,
+6. Every query file Neovim loads for `asciidoc` and `asciidoc_inline`
+   (bundled or your own) loads with the installed parser. Reports each
+   file that does not, with the hint to run
+   `:TSUpdate asciidoc asciidoc_inline` and restart Neovim.
+7. The revision nvim-treesitter built each parser from matches the pin or
+   your `revision` override. Warns otherwise; skipped for parsers
+   nvim-treesitter did not build and for overrides without `revision`.
+8. nvim-treesitter plugin available (optional)
+9. Every loaded asciidoc buffer with `asciidoc-lsp` attached: buffer path,
    client name and `root_dir`. Warns when the buffer path is not the file's
    real path (opened through a symlink).
-8. `inotifywait` executable (Linux only), see
+10. `inotifywait` executable (Linux only), see
    |asciidoc.nvim-file-watching|.
 
 ==============================================================================
@@ -183,6 +244,7 @@ DEBUGGING                                          *asciidoc.nvim-debug*
     workspace root, the reference under the cursor, how it resolves (per
     attribute layer for attributes) and the known attributes with their
     source. Each call replaces the report in the same buffer and window.
+    Line breaks in reported values appear as `\n` and `\r`.
 
 ==============================================================================
 LICENSE                                            *asciidoc.nvim-license*

@@ -91,6 +91,87 @@ T["reports inotifywait when present"] = function()
     expect.equality(entry[1]:find("OK", 1, true) ~= nil, true)
 end
 
+-- A parser older or newer than the grammar the queries are written for
+-- loads fine, but a query naming a node it lacks fails to parse and
+-- disables highlighting. A broken query file stands in for such a parser.
+T["reports a query file the installed parser cannot load"] = function()
+    local dir = vim.fn.tempname()
+    vim.fn.mkdir(dir .. "/queries/asciidoc", "p")
+    local file = dir .. "/queries/asciidoc/highlights.scm"
+    vim.fn.writefile({ "(no_such_node) @markup" }, file)
+    child.lua("vim.opt.runtimepath:prepend(...)", { dir })
+
+    local lines = checkhealth_lines()
+    local errors = lines_matching(lines, file)
+    expect.equality(#errors, 1)
+    expect.equality(errors[1]:find("ERROR", 1, true) ~= nil, true)
+    expect.equality(errors[1]:find("no_such_node", 1, true) ~= nil, true)
+    expect.equality(#lines_matching(lines, ":TSUpdate asciidoc asciidoc_inline"), 1)
+end
+
+T["reports that the bundled queries load"] = function()
+    local lines = checkhealth_lines()
+    local ok = lines_matching(lines, "Queries load with the installed parsers")
+    expect.equality(#ok, 1)
+    expect.equality(ok[1]:find("OK", 1, true) ~= nil, true)
+    expect.equality(#lines_matching(lines, "ERROR"), 0)
+end
+
+--- Stub nvim-treesitter's install directory in the child with a recorded
+--- build revision per language, and set `config` as `vim.g.asciidoc`.
+local function built_from(revisions, config)
+    child.lua(
+        [[
+        local revisions, config, dir = ...
+        vim.g.asciidoc = config
+        package.loaded["asciidoc.config"] = nil
+        vim.fn.mkdir(dir .. "/parser-info", "p")
+        for lang, rev in pairs(revisions) do
+            vim.fn.writefile({ rev }, dir .. "/parser-info/" .. lang .. ".revision")
+        end
+        package.preload["nvim-treesitter.config"] = function()
+            return { get_install_dir = function(name) return dir .. "/" .. name end }
+        end
+    ]],
+        { revisions, config or vim.empty_dict(), vim.fn.tempname() }
+    )
+end
+
+local function pin()
+    return child.lua_get([[require("asciidoc.grammar").revision]])
+end
+
+T["build revision"] = MiniTest.new_set()
+
+T["build revision"]["warns when nvim-treesitter built a parser from another revision"] = function()
+    built_from({ asciidoc = "develop", asciidoc_inline = pin() })
+    local lines = checkhealth_lines()
+    local warning = lines_matching(lines, "built from develop")
+    expect.equality(#warning, 1)
+    expect.equality(warning[1]:find("WARNING", 1, true) ~= nil, true)
+    expect.equality(warning[1]:find("`asciidoc`", 1, true) ~= nil, true)
+    expect.equality(warning[1]:find(pin(), 1, true) ~= nil, true)
+    expect.equality(#lines_matching(lines, "`asciidoc_inline` parser built from"), 1)
+    expect.equality(#lines_matching(lines, "`asciidoc_inline` parser built from " .. pin()), 1)
+end
+
+T["build revision"]["reports parsers built from the pin"] = function()
+    built_from({ asciidoc = pin(), asciidoc_inline = pin() })
+    local entries = lines_matching(checkhealth_lines(), "parser built from " .. pin())
+    expect.equality(#entries, 2)
+    expect.equality(entries[1]:find("OK", 1, true) ~= nil, true)
+end
+
+T["build revision"]["skips a parser overridden without a revision"] = function()
+    built_from({ asciidoc = "develop" }, { treesitter = { asciidoc = { branch = "develop" } } })
+    expect.equality(#lines_matching(checkhealth_lines(), "built from"), 0)
+end
+
+T["build revision"]["skips parsers nvim-treesitter did not build"] = function()
+    built_from(vim.empty_dict())
+    expect.equality(#lines_matching(checkhealth_lines(), "built from"), 0)
+end
+
 T["says when no asciidoc buffer has the server attached"] = function()
     local lines = checkhealth_lines()
     expect.equality(#lines_matching(lines, "No loaded asciidoc buffer has asciidoc-lsp attached"), 1)

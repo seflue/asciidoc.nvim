@@ -53,6 +53,15 @@ The plugin's `lsp/asciidoc.lua` handles LSP start (no more hardcoded dev path).
 :TSInstall asciidoc asciidoc_inline
 ```
 
+After each plugin update, open an AsciiDoc file, update the parsers to the
+grammar commit the bundled queries are written for, and restart Neovim:
+
+```vim
+:TSUpdate asciidoc asciidoc_inline
+```
+
+With `treesitter = { auto_install = true }` the plugin does this when it loads.
+
 ## Lazy.nvim — Published (future)
 
 ```lua
