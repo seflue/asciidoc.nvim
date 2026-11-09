@@ -1,0 +1,8 @@
+= Source Block
+
+Plain text.
+
+[source,lua]
+----
+local x = 1
+----
