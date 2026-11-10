@@ -7,7 +7,7 @@
 local M = {
     url = "https://github.com/seflue/tree-sitter-asciidoc",
     branch = "develop",
-    revision = "1d371fea768d5af4b37021d889abbfc5f28bd5e3",
+    revision = "cb58e8e00b787c2bad2064b8464ba0f56fab53ab",
 }
 
 --- nvim-treesitter `install_info` for `lang` (`asciidoc` or
