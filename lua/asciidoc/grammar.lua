@@ -36,6 +36,44 @@ end
 
 M.languages = { "asciidoc", "asciidoc_inline" }
 
+--- The queries this plugin ships, per language.
+M.queries = {
+    asciidoc = { "highlights", "injections", "folds", "textobjects" },
+    asciidoc_inline = { "highlights", "injections" },
+}
+
+--- Replace every bundled query that does not compile against the installed
+--- parser with an empty one, and say once which parser to update. A parser
+--- built from an older grammar lacks node types the queries name, and the
+--- error a FileType autocmd raises when it compiles them (LazyVim checks for
+--- a query without pcall) ends the chain that sets up the buffer. An installed
+--- parser of another revision that the queries still fit is left alone, so
+--- this checks compilation rather than the revision. Returns the queries that
+--- were replaced, as `lang/name`.
+function M.guard_queries()
+    local replaced = {}
+    for _, lang in ipairs(M.languages) do
+        local ok, loaded = pcall(vim.treesitter.language.add, lang)
+        if ok and loaded then
+            for _, name in ipairs(M.queries[lang]) do
+                if not pcall(vim.treesitter.query.get, lang, name) then
+                    vim.treesitter.query.set(lang, name, "")
+                    replaced[#replaced + 1] = lang .. "/" .. name
+                end
+            end
+        end
+    end
+    if #replaced > 0 then
+        vim.notify(
+            "asciidoc.nvim: the installed parser is older than the bundled queries ("
+                .. table.concat(replaced, ", ")
+                .. "); run :TSUpdate asciidoc asciidoc_inline and restart Neovim",
+            vim.log.levels.WARN
+        )
+    end
+    return replaced
+end
+
 --- Revision nvim-treesitter recorded when it built `lang`, or nil when
 --- nvim-treesitter is absent or did not build it.
 function M.installed_revision(lang)

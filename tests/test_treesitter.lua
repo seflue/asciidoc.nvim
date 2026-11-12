@@ -198,4 +198,68 @@ T["builds the test parsers from the pinned revision"] = function()
     expect.equality(rev, grammar().revision)
 end
 
+--- Put a `highlights.scm` naming a node type no parser has ahead of the
+--- bundled one, as a parser older than the queries sees them, add a
+--- FileType autocmd that compiles the query without pcall as LazyVim's does,
+--- load the plugin and open `basic.adoc`. A replaced query is one `get`
+--- no longer raises on: it finds none, so highlighting stays off until the
+--- parser is updated. With `stale` false nothing is put ahead. Returns what
+--- the buffer ended up with.
+local function open_with_parser(stale)
+    return child.lua(
+        [[
+        local stale, root = ...
+        if stale then
+            local dir = vim.fn.tempname()
+            vim.fn.mkdir(dir .. "/queries/asciidoc", "p")
+            vim.fn.writefile({ "(no_such_node) @markup.heading" }, dir .. "/queries/asciidoc/highlights.scm")
+            vim.opt.runtimepath:prepend(dir)
+        end
+        _G.notified = {}
+        vim.notify = function(msg, level)
+            table.insert(_G.notified, { msg, level })
+        end
+        vim.api.nvim_create_autocmd("FileType", {
+            pattern = "asciidoc",
+            callback = function(ev)
+                vim.treesitter.query.get("asciidoc", "highlights")
+                vim.b[ev.buf].set_up = true
+            end,
+        })
+        vim.cmd.source(root .. "/plugin/asciidoc.lua")
+        vim.v.errmsg = ""
+        vim.cmd.edit(root .. "/tests/fixtures/basic.adoc")
+        return {
+            errmsg = vim.v.errmsg,
+            filetype = vim.bo.filetype,
+            set_up = vim.b.set_up,
+            notified = _G.notified,
+            folds = pcall(vim.treesitter.query.get, "asciidoc", "folds"),
+        }
+    ]],
+        { stale, root }
+    )
+end
+
+T["outdated parser"] = MiniTest.new_set()
+
+T["outdated parser"]["leaves the buffer set up and asks for an update"] = function()
+    local got = open_with_parser(true)
+    expect.equality(got.errmsg, "")
+    expect.equality(got.filetype, "asciidoc")
+    expect.equality(got.set_up, true)
+    expect.equality(#got.notified, 1)
+    expect.equality(got.notified[1][2], vim.log.levels.WARN)
+    expect.equality(got.notified[1][1]:find("asciidoc/highlights", 1, true) ~= nil, true)
+    expect.equality(got.notified[1][1]:find(":TSUpdate asciidoc asciidoc_inline", 1, true) ~= nil, true)
+    expect.equality(got.folds, true)
+end
+
+T["outdated parser"]["keeps the queries of a parser they compile against"] = function()
+    local got = open_with_parser(false)
+    expect.equality(got.errmsg, "")
+    expect.equality(got.notified, {})
+    expect.equality(child.lua_get("#vim.treesitter.query.get('asciidoc', 'highlights').captures > 0"), true)
+end
+
 return T

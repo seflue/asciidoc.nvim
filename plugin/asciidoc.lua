@@ -32,6 +32,11 @@ end, { desc = "Show how asciidoc-lsp resolves the cursor position" })
 -- filetype "asciidoc" -> parser "asciidoc" immediately.
 vim.treesitter.language.register("asciidoc", "asciidoc")
 
+-- Before any FileType autocmd compiles the queries for the buffer that
+-- loaded the plugin: an outdated parser must not keep the buffer from being
+-- set up, or the TSUpdate registration below from being reached.
+require("asciidoc.grammar").guard_queries()
+
 -- Guard: nvim-treesitter is optional
 local has_ts, _ = pcall(require, "nvim-treesitter")
 if not has_ts then
