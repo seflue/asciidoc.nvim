@@ -255,6 +255,29 @@ T["outdated parser"]["leaves the buffer set up and asks for an update"] = functi
     expect.equality(got.folds, true)
 end
 
+-- vim.treesitter.query.get caches a miss too and forgets it only on
+-- OptionSet runtimepath, which lazy.nvim does not fire when it adds a
+-- plugin: a picker preview of an AsciiDoc file before the plugin loads left
+-- every later buffer without highlighting.
+T["finds its queries after a lookup from before it was on the runtimepath"] = function()
+    local got = child.lua(
+        [[
+        local root = ...
+        vim.cmd("noautocmd set runtimepath-=" .. root)
+        vim.treesitter.query.get:clear()
+        local before = #vim.treesitter.query.get_files("asciidoc", "highlights")
+        local missed = vim.treesitter.query.get("asciidoc", "highlights") == nil
+        vim.cmd("noautocmd set runtimepath^=" .. root)
+        vim.cmd.source(root .. "/plugin/asciidoc.lua")
+        vim.cmd.edit(root .. "/tests/fixtures/basic.adoc")
+        local query = vim.treesitter.query.get("asciidoc", "highlights")
+        return { before = before, missed = missed, found = query ~= nil and #query.captures > 0 }
+    ]],
+        { root }
+    )
+    expect.equality(got, { before = 0, missed = true, found = true })
+end
+
 T["outdated parser"]["keeps the queries of a parser they compile against"] = function()
     local got = open_with_parser(false)
     expect.equality(got.errmsg, "")

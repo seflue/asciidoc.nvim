@@ -49,16 +49,25 @@ M.queries = {
 --- a query without pcall) ends the chain that sets up the buffer. An installed
 --- parser of another revision that the queries still fit is left alone, so
 --- this checks compilation rather than the revision. Returns the queries that
---- were replaced, as `lang/name`.
+--- were replaced, as `lang/name: error`.
 function M.guard_queries()
     local replaced = {}
     for _, lang in ipairs(M.languages) do
         local ok, loaded = pcall(vim.treesitter.language.add, lang)
         if ok and loaded then
             for _, name in ipairs(M.queries[lang]) do
-                if not pcall(vim.treesitter.query.get, lang, name) then
+                -- `query.get` caches a miss as well and forgets it only on
+                -- OptionSet runtimepath, which lazy.nvim does not fire when it
+                -- adds the plugin: a lookup from before then, such as a picker
+                -- previewing an AsciiDoc file, would hide the queries for good.
+                local get = vim.treesitter.query.get
+                if type(get) == "table" and get.clear then
+                    get:clear(lang, name)
+                end
+                local compiled, err = pcall(vim.treesitter.query.get, lang, name)
+                if not compiled then
                     vim.treesitter.query.set(lang, name, "")
-                    replaced[#replaced + 1] = lang .. "/" .. name
+                    replaced[#replaced + 1] = lang .. "/" .. name .. ": " .. tostring(err):match("[^\n]*")
                 end
             end
         end
