@@ -21,6 +21,11 @@ local defaults = {
         -- Map `iS` / `aS` (inside / around section) in AsciiDoc buffers.
         enable = true,
     },
+    conceal = {
+        -- Hide the delimiters of *strong*, _italic_, `monospace` and #highlighted#
+        -- text where `conceallevel` hides concealed text.
+        enable = true,
+    },
 }
 
 local user_config = vim.g.asciidoc or {}

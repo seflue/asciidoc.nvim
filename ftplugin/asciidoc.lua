@@ -7,3 +7,6 @@ pcall(vim.treesitter.start) -- also limits spell to @spell regions
 if require("asciidoc.config").textobjects.enable ~= false then
     require("asciidoc.textobjects").attach(0)
 end
+if require("asciidoc.config").conceal.enable ~= false then
+    require("asciidoc.conceal").attach(0)
+end

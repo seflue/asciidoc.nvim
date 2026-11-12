@@ -71,6 +71,9 @@ Default values: >lua
         textobjects = {
             enable = true,  -- `iS` / `aS`, see |asciidoc.nvim-textobjects|
         },
+        conceal = {
+            enable = true,  -- hide inline delimiters, see |asciidoc.nvim-conceal|
+        },
     }
 <
 
@@ -208,6 +211,23 @@ To turn them off: >lua
     vim.g.asciidoc = { textobjects = { enable = false } }
 <
 Set this before the plugin loads (for example in lazy.nvim's `init`).
+
+==============================================================================
+CONCEAL                                            *asciidoc.nvim-conceal*
+
+The plugin conceals the delimiters of strong, italic, monospace and
+highlighted text, single and doubled: `*strong*`, `__italic__`, monospace
+in backticks, `#highlight#`. The text keeps its highlighting. In
+`[.role]#text#` the role stays visible. Superscript (`^x^`), subscript
+(`~x~`) and passthrough (`+x+`) keep their delimiters, which are the only
+mark of them in a terminal.
+
+Neovim's own options decide what is shown: nothing is hidden at
+'conceallevel' 0, the delimiters disappear at 2, and 'concealcursor'
+decides whether the cursor line shows them (by default it does). The
+plugin sets neither option. To turn concealing off: >lua
+    vim.g.asciidoc = { conceal = { enable = false } }
+<
 
 ==============================================================================
 HEALTH CHECK                                    *asciidoc.nvim-health*

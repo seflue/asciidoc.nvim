@@ -1,0 +1,7 @@
+*fett* und **fett**
+_kursiv_ und __kursiv__
+`mono` und ``mono``
+#mark# und ##mark##
+[.role]#x# und *_beides_*
+^hoch^ ~tief~ +pass+
+
