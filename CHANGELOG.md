@@ -10,8 +10,6 @@ Before 1.0, a minor version may contain breaking changes.
 
 ## [Unreleased]
 
-This is the first public release.
-
 ### Added
 
 - `:AsciidocDebug` shows how asciidoc-lsp resolves the position under the

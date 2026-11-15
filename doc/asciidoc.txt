@@ -3,9 +3,9 @@
 ==============================================================================
 INTRODUCTION                                              *asciidoc.nvim*
 
-Batteries-included AsciiDoc plugin for Neovim 0.11+.
-Provides LSP client config, Treesitter grammar registration, syntax queries,
-buffer settings, filetype detection, and health checks — zero-config.
+AsciiDoc support for Neovim 0.11+: syntax highlighting, folding, text objects,
+concealed markup, and a ready-made setup for asciidoc-lsp. No setup() call is
+needed.
 
 ==============================================================================
 REQUIREMENTS                                    *asciidoc.nvim-requirements*
@@ -26,7 +26,7 @@ After each plugin update, update them from an AsciiDoc buffer (see
 ==============================================================================
 INSTALLATION                                    *asciidoc.nvim-installation*
 
-Lazy.nvim (minimal, zero-config): >lua
+Lazy.nvim (minimal): >lua
     {
         'seflue/asciidoc.nvim',
         ft = 'asciidoc',
@@ -111,8 +111,8 @@ TREESITTER                                        *asciidoc.nvim-treesitter*
 
 The plugin registers the seflue AsciiDoc grammars with nvim-treesitter:
 
-- `asciidoc` — block-level grammar (sections, blocks, macros)
-- `asciidoc_inline` — inline grammar (bold, italic, links, xrefs)
+- `asciidoc`: block-level grammar (sections, blocks, macros)
+- `asciidoc_inline`: inline grammar (bold, italic, links, xrefs)
 
 Inline content is injected via `injections.scm` (paragraph lines).
 Source blocks take their language from `[source,<lang>]`, diagram
