@@ -172,6 +172,64 @@ T["build revision"]["skips parsers nvim-treesitter did not build"] = function()
     expect.equality(#lines_matching(checkhealth_lines(), "built from"), 0)
 end
 
+--- Make the child's server command a script that prints `output` (or
+--- nothing) for `--version`.
+local function server_printing(output)
+    local script = vim.fn.tempname()
+    vim.fn.writefile({ "#!/bin/sh", output and ("echo '" .. output .. "'") or "exit 0" }, script)
+    vim.uv.fs_chmod(script, tonumber("755", 8))
+    child.lua([[vim.lsp.config("asciidoc", { cmd = { ... } })]], { script })
+end
+
+T["server version"] = MiniTest.new_set()
+
+T["server version"]["is OK from the minimum version on"] = function()
+    server_printing("asciidoc-lsp 0.7.0")
+    local entry = lines_matching(checkhealth_lines(), "asciidoc-lsp 0.7.0")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("OK", 1, true) ~= nil, true)
+end
+
+T["server version"]["is OK for a local build after the minimum version"] = function()
+    server_printing("asciidoc-lsp 0.7.0-3-gabc1234-dirty")
+    local entry = lines_matching(checkhealth_lines(), "asciidoc-lsp 0.7.0-3-gabc1234-dirty")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("OK", 1, true) ~= nil, true)
+end
+
+T["server version"]["is an error below the minimum version"] = function()
+    server_printing("asciidoc-lsp 0.6.0")
+    local lines = checkhealth_lines()
+    local entry = lines_matching(lines, "asciidoc-lsp 0.6.0 is too old")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("ERROR", 1, true) ~= nil, true)
+    expect.equality(#lines_matching(lines, "asciidoc-lsp >= 0.7.0"), 1)
+    expect.equality(#lines_matching(lines, "https://github.com/seflue/asciidoc-lsp/releases"), 1)
+end
+
+T["server version"]["warns for a local build after an older version"] = function()
+    server_printing("asciidoc-lsp 0.6.0-42-gabc1234")
+    local entry = lines_matching(checkhealth_lines(), "asciidoc-lsp 0.6.0-42-gabc1234")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("WARNING", 1, true) ~= nil, true)
+end
+
+T["server version"]["warns when the output cannot be parsed"] = function()
+    server_printing("something else")
+    local lines = checkhealth_lines()
+    local entry = lines_matching(lines, "Could not read the asciidoc-lsp version")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("WARNING", 1, true) ~= nil, true)
+    expect.equality(#lines_matching(lines, "asciidoc-lsp >= 0.7.0"), 1)
+end
+
+T["server version"]["warns when the server prints nothing"] = function()
+    server_printing(nil)
+    local entry = lines_matching(checkhealth_lines(), "Could not read the asciidoc-lsp version")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("WARNING", 1, true) ~= nil, true)
+end
+
 T["says when no asciidoc buffer has the server attached"] = function()
     local lines = checkhealth_lines()
     expect.equality(#lines_matching(lines, "No loaded asciidoc buffer has asciidoc-lsp attached"), 1)

@@ -1,5 +1,70 @@
 local M = {}
 
+M.min_server_version = '0.7.0'
+M.releases_url = 'https://github.com/seflue/asciidoc-lsp/releases'
+
+local function parse_triple(text)
+    local major, minor, patch = text:match('^(%d+)%.(%d+)%.(%d+)')
+    if not major then
+        return nil
+    end
+    return { tonumber(major), tonumber(minor), tonumber(patch) }
+end
+
+local function at_least(version, minimum)
+    for i = 1, 3 do
+        if version[i] ~= minimum[i] then
+            return version[i] > minimum[i]
+        end
+    end
+    return true
+end
+
+--- Check the version `<cmd> --version` prints against `min_server_version`.
+--- The server prints `asciidoc-lsp <version>`: `X.Y.Z` for a release, and
+--- `X.Y.Z-<n>-g<sha>[-dirty]` for a local build, which is `n` commits after
+--- `X.Y.Z`. Such a build passes when `X.Y.Z` does; below that, whether it has
+--- the needed features is unknown. Anything else (no `--version` in old
+--- servers, a build without tags) cannot be compared.
+function M.check_server_version(cmd)
+    local minimum = parse_triple(M.min_server_version)
+    local advice = {
+        'asciidoc.nvim needs asciidoc-lsp >= ' .. M.min_server_version,
+        'Download it from ' .. M.releases_url,
+    }
+    local argv = vim.list_extend(vim.deepcopy(cmd), { '--version' })
+    local ok, result = pcall(function()
+        return vim.system(argv, { text = true, stdin = '', timeout = 5000 }):wait()
+    end)
+    local output = ok and vim.trim((result.stdout or '') .. (result.stderr or '')) or ''
+    local version = output:match('^asciidoc%-lsp%s+(%S+)')
+    local parsed = version and parse_triple(version)
+    if not parsed then
+        vim.health.warn(
+            'Could not read the asciidoc-lsp version from `' .. table.concat(argv, ' ') .. '`',
+            vim.list_extend({ 'The server may be older than 0.7.0, which has no --version' }, advice)
+        )
+        return
+    end
+    local is_release = version:match('^%d+%.%d+%.%d+$') ~= nil
+    local is_local_build = version:match('^%d+%.%d+%.%d+%-%d+%-g%x+') ~= nil
+    if is_release and at_least(parsed, minimum) then
+        vim.health.ok('asciidoc-lsp ' .. version .. ' found')
+    elseif is_release then
+        vim.health.error('asciidoc-lsp ' .. version .. ' is too old', advice)
+    elseif is_local_build and at_least(parsed, minimum) then
+        vim.health.ok('asciidoc-lsp ' .. version .. ' found (local build)')
+    elseif is_local_build then
+        vim.health.warn(
+            'asciidoc-lsp ' .. version .. ' is a local build after ' .. table.concat(parsed, '.')
+                .. '; cannot tell whether it is >= ' .. M.min_server_version,
+            advice
+        )
+    else
+        vim.health.warn('Unrecognized asciidoc-lsp version: ' .. version, advice)
+    end
+end
+
 function M.check()
     vim.health.start('asciidoc.nvim')
 
@@ -12,16 +77,17 @@ function M.check()
         })
     end
 
-    -- 2. asciidoc-lsp binary
-    if vim.fn.executable('asciidoc-lsp') == 1 then
-        local result = vim.fn.system({ 'asciidoc-lsp', '--version' })
-        local version = vim.trim(result)
-        vim.health.ok('asciidoc-lsp found: ' .. version)
-    else
-        vim.health.error('asciidoc-lsp not found in $PATH', {
-            'Install via: cargo install asciidoc-lsp',
-            'Or download from GitHub Releases',
+    -- 2. asciidoc-lsp binary: the configured server command, and its version
+    local cmd = vim.lsp.config.asciidoc and vim.lsp.config.asciidoc.cmd
+    if type(cmd) ~= 'table' or type(cmd[1]) ~= 'string' then
+        vim.health.warn('The asciidoc-lsp command is not a plain command; version not checked')
+    elseif vim.fn.executable(cmd[1]) ~= 1 then
+        vim.health.error(cmd[1] .. ' not found', {
+            'Download asciidoc-lsp from ' .. M.releases_url,
+            'Or set the command: vim.lsp.config("asciidoc", { cmd = { "/path/to/asciidoc-lsp" } })',
         })
+    else
+        M.check_server_version(cmd)
     end
 
     -- 3. Treesitter ABI version
