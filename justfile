@@ -1,7 +1,7 @@
 # asciidoc.nvim task runner
 #
-# Set ASCIIDOC_LSP_CMD to the asciidoc-lsp binary under test, e.g. from
-# the asciidoc-lsp repo:
+# test and test-file need ASCIIDOC_LSP_CMD set to the asciidoc-lsp binary
+# under test (they abort without it), e.g. from the asciidoc-lsp repo:
 #   ASCIIDOC_LSP_CMD=$(just -f asciidoc-lsp/justfile bin-path) just -f asciidoc.nvim/justfile test
 
 # Grammar the bundled queries are written for, read from
@@ -28,15 +28,25 @@ parsers:
     @test -f deps/site/parser/asciidoc_inline.so || tree-sitter build -o deps/site/parser/asciidoc_inline.so deps/tree-sitter-asciidoc/tree-sitter-asciidoc_inline
     @echo "{{grammar_rev}}" > deps/site/parser/grammar_rev
 
+# Abort unless ASCIIDOC_LSP_CMD names the server under test, so the suite
+# never falls back to an outdated asciidoc-lsp from PATH
+[private]
+require-lsp-cmd:
+    @test -n "${ASCIIDOC_LSP_CMD:-}" || { echo "ASCIIDOC_LSP_CMD is not set: point it at the asciidoc-lsp binary under test (see the top of this justfile)" >&2; exit 1; }
+
 # Run all tests headless (tests/test_*.lua)
-test: deps parsers
+test: require-lsp-cmd deps parsers
     nvim --headless --clean -u tests/minimal_init.lua -c "lua MiniTest.run()"
 
 # Run one test file headless
-test-file FILE: deps parsers
+test-file FILE: require-lsp-cmd deps parsers
     nvim --headless --clean -u tests/minimal_init.lua -c "lua MiniTest.run_file('{{FILE}}')"
 
 # Open a file in a clean Neovim with only this plugin and the LSP
 # (<Space> as leader, <leader>ca for code actions as in LazyVim)
 fixture FILE: parsers
     nvim --clean -u tests/minimal_init.lua --cmd "let mapleader = ' '" -c "nnoremap <leader>ca <Cmd>lua vim.lsp.buf.code_action()<CR>" {{FILE}}
+
+# Cut a release: bump is patch, minor or major (gate: test on main, needs ASCIIDOC_LSP_CMD)
+release bump:
+    RELEASE_LINT_CMD=true scripts/release.sh {{bump}}
