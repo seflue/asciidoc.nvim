@@ -1,5 +1,5 @@
 ; folds.scm for asciidoc (block-level grammar)
-; asciidoc.nvim — Parser: seflue/tree-sitter-asciidoc (develop)
+; asciidoc.nvim — Parser: seflue/tree-sitter-asciidoc (main)
 
 ; Fold sections (heading + content)
 (section) @fold

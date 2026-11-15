@@ -6,7 +6,7 @@
 
 local M = {
     url = "https://github.com/seflue/tree-sitter-asciidoc",
-    branch = "develop",
+    branch = "main",
     revision = "f41d90c701187b46cb56759bf2bb04eedfab83c0",
 }
 

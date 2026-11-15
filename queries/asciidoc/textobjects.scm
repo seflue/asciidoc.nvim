@@ -1,6 +1,6 @@
 ; textobjects.scm for asciidoc (block-level grammar)
 ; asciidoc.nvim — Compatible with nvim-treesitter-textobjects
-; Parser: seflue/tree-sitter-asciidoc (develop)
+; Parser: seflue/tree-sitter-asciidoc (main)
 
 ; =============================================================================
 ; --- Sections ---
