@@ -17,12 +17,17 @@ T["render"]["shows request, node, resolution and known attributes"] = function()
         node = { kind = "attribute_ref", line = 5, fields = { name = "foo" } },
         resolution = {
             name = "foo",
-            value = "a|b",
-            per_file = { registered = false, hit = vim.NIL },
+            scopes = { { scope = "a.adoc", value = "a|b", definition = vim.NIL } },
         },
         known_attributes = {
-            { name = "foo", value = "a|b", layer = "per_file", source = { file = "/doc/a.adoc", line = 2 } },
-            { name = "doctype", value = "article", layer = "builtin", source = vim.NIL },
+            {
+                scope = "a.adoc",
+                name = "foo",
+                value = "a|b",
+                origin = "document",
+                source = { file = "/doc/a.adoc", line = 2 },
+            },
+            { scope = "a.adoc", name = "doctype", value = "article", origin = "builtin", source = vim.NIL },
         },
     }
 
@@ -48,17 +53,18 @@ T["render"]["shows request, node, resolution and known attributes"] = function()
         "## Resolution",
         "",
         "- name: `foo`",
-        "- per_file:",
-        "  - hit: `null`",
-        "  - registered: `false`",
-        "- value: `a|b`",
+        "- scopes:",
+        "  - 1:",
+        "    - definition: `null`",
+        "    - scope: `a.adoc`",
+        "    - value: `a|b`",
         "",
         "## Known attributes",
         "",
-        "| name | value | layer | source |",
-        "| --- | --- | --- | --- |",
-        "| foo | a\\|b | per_file | /doc/a.adoc:2 |",
-        "| doctype | article | builtin |  |",
+        "| scope | name | value | origin | source |",
+        "| --- | --- | --- | --- | --- |",
+        "| a.adoc | foo | a\\|b | document | /doc/a.adoc:2 |",
+        "| a.adoc | doctype | article | builtin |  |",
     })
 end
 
@@ -91,12 +97,12 @@ end
 T["render"]["escapes newlines in table cells"] = function()
     local report = {
         known_attributes = {
-            { name = "to\n// Expected", value = "a\r\nb", layer = "per_file", source = vim.NIL },
+            { scope = "a.adoc", name = "to\n// Expected", value = "a\r\nb", origin = "document", source = vim.NIL },
         },
     }
 
     local lines = require("asciidoc.debug").render(report, ctx)
-    expect.equality(lines[#lines], "| to\\n// Expected | a\\r\\nb | per_file |  |")
+    expect.equality(lines[#lines], "| a.adoc | to\\n// Expected | a\\r\\nb | document |  |")
 end
 
 -- GFM reads `\\|` as an escaped backslash and a cell boundary, so a value
@@ -105,12 +111,12 @@ end
 T["render"]["escapes backslashes in table cells"] = function()
     local report = {
         known_attributes = {
-            { name = "dir", value = "C:\\", layer = "per_file", source = vim.NIL },
+            { scope = "a.adoc", name = "dir", value = "C:\\", origin = "document", source = vim.NIL },
         },
     }
 
     local lines = require("asciidoc.debug").render(report, ctx)
-    expect.equality(lines[#lines], "| dir | C:\\\\ | per_file |  |")
+    expect.equality(lines[#lines], "| a.adoc | dir | C:\\\\ | document |  |")
 end
 
 T["render"]["escapes newlines in field values"] = function()
@@ -166,19 +172,19 @@ T[":AsciidocDebug"] = MiniTest.new_set({
 T[":AsciidocDebug"]["reports an attribute reference"] = function()
     local lines = debug_at("{product}")
     expect.equality(vim.tbl_contains(lines, "- kind: `attribute_ref`"), true)
-    expect.equality(vim.tbl_contains(lines, "- value: `Widget`"), true)
+    expect.equality(vim.tbl_contains(lines, "    - value: `Widget`"), true)
 end
 
 T[":AsciidocDebug"]["reports an xref"] = function()
     local lines = debug_at("xref:basic")
     expect.equality(vim.tbl_contains(lines, "- kind: `xref`"), true)
-    expect.equality(vim.tbl_contains(lines, "- error: `null`"), true)
+    expect.equality(vim.tbl_contains(lines, "    - error: `null`"), true)
 end
 
 T[":AsciidocDebug"]["reports an include"] = function()
     local lines = debug_at("include::basic")
     expect.equality(vim.tbl_contains(lines, "- kind: `include`"), true)
-    expect.equality(vim.tbl_contains(lines, "- exists: `true`"), true)
+    expect.equality(vim.tbl_contains(lines, "    - exists: `true`"), true)
 end
 
 T[":AsciidocDebug"]["reports plain text"] = function()

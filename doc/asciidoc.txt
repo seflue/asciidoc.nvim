@@ -262,7 +262,7 @@ DEBUGGING                                          *asciidoc.nvim-debug*
     buffer (`asciidoc.explainPosition`) and show the report as Markdown in
     a scratch buffer. The report lists the raw and canonical file path, the
     workspace root, the reference under the cursor, how it resolves (per
-    attribute layer for attributes) and the known attributes with their
+    scope for attributes) and the known attributes with their
     source. Each call replaces the report in the same buffer and window.
     Line breaks in reported values appear as `\n` and `\r`.
 

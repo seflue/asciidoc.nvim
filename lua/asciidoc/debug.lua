@@ -66,17 +66,21 @@ local function append_known_attributes(lines, attributes)
         lines[#lines + 1] = "_None._"
         return
     end
-    vim.list_extend(lines, { "| name | value | layer | source |", "| --- | --- | --- | --- |" })
+    vim.list_extend(lines, {
+        "| scope | name | value | origin | source |",
+        "| --- | --- | --- | --- | --- |",
+    })
     for _, attr in ipairs(attributes) do
         local source = ""
         if type(attr.source) == "table" then
             source = attr.source.file .. ":" .. attr.source.line
         end
         lines[#lines + 1] = string.format(
-            "| %s | %s | %s | %s |",
+            "| %s | %s | %s | %s | %s |",
+            cell(attr.scope),
             cell(attr.name),
             cell(attr.value),
-            cell(attr.layer),
+            cell(attr.origin),
             cell(source)
         )
     end
