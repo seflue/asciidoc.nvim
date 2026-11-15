@@ -10,6 +10,8 @@ Before 1.0, a minor version may contain breaking changes.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-15
+
 ### Added
 
 - `:AsciidocDebug` shows how asciidoc-lsp resolves the position under the
@@ -64,7 +66,8 @@ Before 1.0, a minor version may contain breaking changes.
 - asciidoc-lsp starts automatically for AsciiDoc buffers.
 
 <!-- next-url -->
-[Unreleased]: https://github.com/seflue/asciidoc.nvim/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/seflue/asciidoc.nvim/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/seflue/asciidoc.nvim/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/seflue/asciidoc.nvim/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/seflue/asciidoc.nvim/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/seflue/asciidoc.nvim/commits/v0.1.0
