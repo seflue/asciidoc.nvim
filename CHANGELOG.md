@@ -10,6 +10,13 @@ Before 1.0, a minor version may contain breaking changes.
 
 ## [Unreleased]
 
+### Changed
+
+- Newer asciidoc-lsp versions send semantic tokens; the plugin drops them, so
+  Tree-sitter stays the only source of highlighting. A custom `on_init` set
+  with `vim.lsp.config('asciidoc', ...)` replaces this: clear
+  `client.server_capabilities.semanticTokensProvider` in it as well.
+
 ## [0.3.0] - 2026-11-15
 
 ### Added

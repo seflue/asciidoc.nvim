@@ -86,7 +86,12 @@ Override with `vim.lsp.config()` before enabling: >lua
     })
     vim.lsp.enable('asciidoc')
 <
-
+The plugin ignores the semantic tokens asciidoc-lsp sends for editors
+without a Tree-sitter highlighter: they would be drawn over the Tree-sitter
+highlights (|lsp-semantic-highlight|). `lsp/asciidoc.lua` does this in
+`on_init`. If you set your own `on_init`, it replaces that one: add >lua
+    client.server_capabilities.semanticTokensProvider = nil
+<
                                               *asciidoc.nvim-file-watching*
 The LSP config lets `asciidoc-lsp` watch `.asciidoctorconfig` and `.adoc`
 files (`workspace.didChangeWatchedFiles.dynamicRegistration`), so changes
