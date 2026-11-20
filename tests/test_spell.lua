@@ -69,6 +69,20 @@ T["skips the passthrough macro but spellchecks prose next to it"] = function()
     expect.equality(misspelled_words(), { "tyypo" })
 end
 
+T["spellchecks paragraphs and list items inside a quote block"] = function()
+    child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/spell.adoc")
+    child.lua([[vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+        "[quote,Autor]",
+        "____",
+        "A tyypo and *boldd* text",
+        "on two lines.",
+        "",
+        "* iteem here",
+        "____",
+    })]])
+    expect.equality(misspelled_words(), { "tyypo", "boldd", "iteem" })
+end
+
 T["skips pass macros with substitutions"] = function()
     child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/spell.adoc")
     child.lua([[vim.api.nvim_buf_set_lines(0, 0, -1, false, {
