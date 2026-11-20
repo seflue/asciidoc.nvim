@@ -21,11 +21,13 @@ local function at_least(version, minimum)
 end
 
 --- Check the version `<cmd> --version` prints against `min_server_version`.
---- The server prints `asciidoc-lsp <version>`: `X.Y.Z` for a release, and
---- `X.Y.Z-<n>-g<sha>[-dirty]` for a local build, which is `n` commits after
---- `X.Y.Z`. Such a build passes when `X.Y.Z` does; below that, whether it has
---- the needed features is unknown. Anything else (no `--version` in old
---- servers, a build without tags) cannot be compared.
+--- The server prints `asciidoc-lsp <version>`: `X.Y.Z` (or a pre-release such
+--- as `X.Y.Z-rc.1`) for a release, and `X.Y.Z+<n>.<sha>[.dirty]` for a local
+--- build, which is `n` commits after `X.Y.Z`. Older local builds print
+--- `X.Y.Z-<n>-g<sha>[-dirty]`. A local build passes when `X.Y.Z` does; below
+--- that, whether it has the needed features is unknown (`0.0.0+<sha>` is a
+--- build without any reachable tag). Anything else (no
+--- `--version` in old servers) cannot be compared.
 function M.check_server_version(cmd)
     local minimum = parse_triple(M.min_server_version)
     local advice = {
@@ -46,14 +48,20 @@ function M.check_server_version(cmd)
         )
         return
     end
-    local is_release = version:match('^%d+%.%d+%.%d+$') ~= nil
-    local is_local_build = version:match('^%d+%.%d+%.%d+%-%d+%-g%x+') ~= nil
+    local is_local_build = version:find('+', 1, true) ~= nil or version:match('%-%d+%-g%x+') ~= nil
+    local is_release = not is_local_build and version:match('^%d+%.%d+%.%d+%-?[%w%.%-]*$') ~= nil
     if is_release and at_least(parsed, minimum) then
         vim.health.ok('asciidoc-lsp ' .. version .. ' found')
     elseif is_release then
         vim.health.error('asciidoc-lsp ' .. version .. ' is too old', advice)
     elseif is_local_build and at_least(parsed, minimum) then
         vim.health.ok('asciidoc-lsp ' .. version .. ' found (local build)')
+    elseif is_local_build and version:match('^0%.0%.0%+') then
+        vim.health.warn(
+            'asciidoc-lsp ' .. version .. ' is a local build without a release tag; cannot tell whether it is >= '
+                .. M.min_server_version,
+            advice
+        )
     elseif is_local_build then
         vim.health.warn(
             'asciidoc-lsp ' .. version .. ' is a local build after ' .. table.concat(parsed, '.')

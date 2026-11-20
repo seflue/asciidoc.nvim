@@ -214,6 +214,49 @@ T["server version"]["warns for a local build after an older version"] = function
     expect.equality(entry[1]:find("WARNING", 1, true) ~= nil, true)
 end
 
+T["server version"]["is OK for a local build in semver form"] = function()
+    server_printing("asciidoc-lsp 0.7.0+3.abc1234.dirty")
+    local entry = lines_matching(checkhealth_lines(), "asciidoc-lsp 0.7.0+3.abc1234.dirty")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("OK", 1, true) ~= nil, true)
+    expect.equality(entry[1]:find("local build", 1, true) ~= nil, true)
+end
+
+T["server version"]["warns for a semver local build after an older version"] = function()
+    server_printing("asciidoc-lsp 0.6.0+42.abc1234")
+    local entry = lines_matching(checkhealth_lines(), "asciidoc-lsp 0.6.0+42.abc1234")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("WARNING", 1, true) ~= nil, true)
+end
+
+T["server version"]["warns for a build without a release tag"] = function()
+    server_printing("asciidoc-lsp 0.0.0+e63ebcd.dirty")
+    local entry = lines_matching(checkhealth_lines(), "without a release tag")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("WARNING", 1, true) ~= nil, true)
+end
+
+T["server version"]["is OK for a pre-release above the minimum version"] = function()
+    server_printing("asciidoc-lsp 0.10.0-rc.1")
+    local entry = lines_matching(checkhealth_lines(), "asciidoc-lsp 0.10.0-rc.1")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("OK", 1, true) ~= nil, true)
+end
+
+T["server version"]["is OK for a local build after a pre-release"] = function()
+    server_printing("asciidoc-lsp 0.10.0-rc.1+3.abc1234")
+    local entry = lines_matching(checkhealth_lines(), "asciidoc-lsp 0.10.0-rc.1+3.abc1234")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("OK", 1, true) ~= nil, true)
+end
+
+T["server version"]["is an error for a pre-release below the minimum version"] = function()
+    server_printing("asciidoc-lsp 0.6.0-rc.1")
+    local entry = lines_matching(checkhealth_lines(), "asciidoc-lsp 0.6.0-rc.1 is too old")
+    expect.equality(#entry, 1)
+    expect.equality(entry[1]:find("ERROR", 1, true) ~= nil, true)
+end
+
 T["server version"]["warns when the output cannot be parsed"] = function()
     server_printing("something else")
     local lines = checkhealth_lines()
