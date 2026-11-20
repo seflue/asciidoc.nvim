@@ -1,4 +1,10 @@
-(document_title) @markup.heading.1
+;; The document title node holds the whole header, author and revision
+;; lines included, so only its marker and title text are the heading.
+(document_title
+  [
+    (title_h0_marker)
+    (line)
+  ] @markup.heading.1)
 
 (title1) @markup.heading.2
 
@@ -16,8 +22,10 @@
   ";" @punctuation.delimiter)
 
 (revision_line
-  "," @punctuation.delimiter
-  ":" @punctuation.delimiter)
+  [
+    ","
+    ":"
+  ] @punctuation.delimiter)
 
 (list_continuation) @constant
 
@@ -103,8 +111,8 @@
 (document_attr
   (attr_name) @property)
 
-(block_style) @type
 (positional_attr) @attribute
+(block_style) @type
 (id) @label
 (role) @attribute
 (option) @attribute
@@ -116,6 +124,9 @@
   (block_title_marker) @punctuation.special) @attribute
 
 (ident_block) @markup.raw.block
+
+(literal_block
+  (literal_block_body) @markup.raw.block)
 
 (callout_list_marker) @punctuation.special
 
@@ -155,41 +166,140 @@
     (element_attr_marker) @comment.note
     (positional_attr (block_style) @_style @comment.note)
     (element_attr_marker) @comment.note)
-  (delimited_block
-    (delimited_block_start_marker) @comment.note
-    (delimited_block_end_marker) @comment.note))
+  [(paragraph) (delimited_block) (open_block)])
   (#any-of? @_style "NOTE" "TIP"))
+
+((section_block
+  (element_attr
+    (element_attr_marker)
+    .
+    (positional_attr) @_style)
+  [(delimited_block
+     (delimited_block_start_marker) @comment.note
+     (delimited_block_end_marker) @comment.note)
+   (open_block
+     (open_block_marker) @comment.note
+     (open_block_marker) @comment.note)])
+  (#match? @_style "^(NOTE|TIP)([#.%]|$)"))
+
+; Every paragraph directly in the body, whatever stands between them.
+; A styled paragraph in the body gets the colour too (rare, accepted).
+((section_block
+  (element_attr
+    (element_attr_marker)
+    .
+    (positional_attr) @_style)
+  [(delimited_block
+     (section_block
+       (paragraph) @comment.note))
+   (open_block
+     (section_block
+       (paragraph) @comment.note))])
+  (#match? @_style "^(NOTE|TIP)([#.%]|$)"))
 
 ((section_block
   (element_attr
     (element_attr_marker) @comment.warning
     (positional_attr (block_style) @_style @comment.warning)
     (element_attr_marker) @comment.warning)
-  (delimited_block
-    (delimited_block_start_marker) @comment.warning
-    (delimited_block_end_marker) @comment.warning))
+  [(paragraph) (delimited_block) (open_block)])
   (#any-of? @_style "CAUTION" "WARNING"))
+
+((section_block
+  (element_attr
+    (element_attr_marker)
+    .
+    (positional_attr) @_style)
+  [(delimited_block
+     (delimited_block_start_marker) @comment.warning
+     (delimited_block_end_marker) @comment.warning)
+   (open_block
+     (open_block_marker) @comment.warning
+     (open_block_marker) @comment.warning)])
+  (#match? @_style "^(CAUTION|WARNING)([#.%]|$)"))
+
+; Every paragraph directly in the body, whatever stands between them.
+; A styled paragraph in the body gets the colour too (rare, accepted).
+((section_block
+  (element_attr
+    (element_attr_marker)
+    .
+    (positional_attr) @_style)
+  [(delimited_block
+     (section_block
+       (paragraph) @comment.warning))
+   (open_block
+     (section_block
+       (paragraph) @comment.warning))])
+  (#match? @_style "^(CAUTION|WARNING)([#.%]|$)"))
 
 ((section_block
   (element_attr
     (element_attr_marker) @comment.error
     (positional_attr (block_style) @_style @comment.error)
     (element_attr_marker) @comment.error)
-  (delimited_block
-    (delimited_block_start_marker) @comment.error
-    (delimited_block_end_marker) @comment.error))
+  [(paragraph) (delimited_block) (open_block)])
   (#eq? @_style "IMPORTANT"))
 
 ((section_block
   (element_attr
-    (positional_attr
-      (block_style) @_style))
+    (element_attr_marker)
+    .
+    (positional_attr) @_style)
+  [(delimited_block
+     (delimited_block_start_marker) @comment.error
+     (delimited_block_end_marker) @comment.error)
+   (open_block
+     (open_block_marker) @comment.error
+     (open_block_marker) @comment.error)])
+  (#match? @_style "^IMPORTANT([#.%]|$)"))
+
+; Every paragraph directly in the body, whatever stands between them.
+; A styled paragraph in the body gets the colour too (rare, accepted).
+((section_block
+  (element_attr
+    (element_attr_marker)
+    .
+    (positional_attr) @_style)
+  [(delimited_block
+     (section_block
+       (paragraph) @comment.error))
+   (open_block
+     (section_block
+       (paragraph) @comment.error))])
+  (#match? @_style "^IMPORTANT([#.%]|$)"))
+
+((section_block
+  (element_attr
+    (element_attr_marker)
+    .
+    (positional_attr) @_style)
   (listing_block
     (listing_block_body) @markup.raw.block))
-  (#not-any-of? @_style
-    "a2s" "barcode" "blockdiag" "bpmn" "bytefield" "d2" "dbml" "diagrams" "ditaa" "dpic" "erd"
-    "gnuplot" "graphviz" "lilypond" "meme" "mermaid" "msc" "nomnoml" "pikchr" "plantuml" "shaape"
-    "smcat" "structurizr" "svgbob" "symbolator" "syntrax" "tikz" "umlet" "vega" "wavedrom"))
+  ; Same diagram list as injections.scm; shorthands (`plantuml#arch`) count.
+  (#not-match? @_style
+    "^(a2s|barcode|blockdiag|bpmn|bytefield|d2|dbml|diagrams|ditaa|dpic|erd|gnuplot|graphviz|lilypond|meme|mermaid|msc|nomnoml|pikchr|plantuml|shaape|smcat|structurizr|svgbob|symbolator|syntrax|tikz|umlet|vega|wavedrom)([#.%]|$)"))
+
+; A listing without a style is plain raw text: no attribute list, or one
+; that leads with a named attribute (`[subs=x]`). Shorthand-only lists
+; (`[#id]`) fall under the styled pattern above.
+(section_block
+  .
+  [
+    (block_title)
+    (block_anchor)
+  ]*
+  .
+  (listing_block
+    (listing_block_body) @markup.raw.block))
+
+(section_block
+  (element_attr
+    (element_attr_marker)
+    .
+    (named_attr))
+  (listing_block
+    (listing_block_body) @markup.raw.block))
 
 (line) @spell
 
