@@ -370,6 +370,19 @@ DEBUGGING                                          *asciidoc.nvim-debug*
     Line breaks in reported values appear as `\n` and `\r`.
 
 ==============================================================================
+PREVIEW                                          *asciidoc.nvim-preview*
+
+                                                        *:AsciidocPreview*
+:AsciidocPreview
+    Ask `asciidoc-lsp` to start the preview of the current buffer and open
+    the returned URL in the browser (|vim.ui.open()|). The server needs
+    `asciidoctor` in `$PATH`; an error from the server is shown with
+    |vim.notify()|. From then on the plugin sends the cursor line to the
+    server on |CursorMoved|, |CursorMovedI| and |BufEnter| in AsciiDoc
+    buffers of the same client, at most every 100 ms, and the page scrolls
+    to it. Nothing is sent before the command has succeeded.
+
+==============================================================================
 LICENSE                                            *asciidoc.nvim-license*
 
 Apache License 2.0

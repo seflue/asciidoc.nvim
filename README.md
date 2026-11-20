@@ -77,7 +77,12 @@ vim.lsp.config('asciidoc', { cmd = { '/path/to/asciidoc-lsp' } })
 ```
 
 `:AsciidocDebug` shows how the server resolves the position under the
-cursor. The full reference is in `:help asciidoc.nvim`.
+cursor.
+
+`:AsciidocPreview` opens a live preview of the buffer in the browser (the
+server needs `asciidoctor` in `$PATH`). The page follows the cursor, also
+when you move to another AsciiDoc buffer. The full reference is in
+`:help asciidoc.nvim`.
 
 ## Health check
 

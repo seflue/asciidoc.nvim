@@ -19,6 +19,8 @@ Before 1.0, a minor version may contain breaking changes.
   `foldmethod` and `foldexpr` in AsciiDoc buffers (`folds.enable` turns this
   off). Sidebar, passthrough, markdown-style quote and comment blocks, CSV
   and DSV tables and description lists fold as well.
+- `:AsciidocPreview` opens a live preview in the browser; the page follows
+  the cursor.
 
 ### Changed
 
