@@ -38,14 +38,18 @@ local function send_cursor()
     })
 end
 
--- Trailing throttle: CursorMoved fires per keystroke, and only the last
--- position within the window matters. The timer callback runs in a fast
--- event context, so the work is deferred to the main loop.
+-- Trailing throttle: CursorMoved fires per keystroke. A running timer is
+-- left alone, so continuous movement still sends once per window; the
+-- position is read when the timer fires, so the last one wins. The timer
+-- callback runs in a fast event context, so the work is deferred to the
+-- main loop.
 local function schedule_send()
     if not timer then
         timer = vim.uv.new_timer()
     end
-    timer:stop()
+    if timer:is_active() then
+        return
+    end
     timer:start(THROTTLE_MS, 0, vim.schedule_wrap(send_cursor))
 end
 
