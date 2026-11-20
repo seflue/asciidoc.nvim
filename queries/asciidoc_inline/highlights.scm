@@ -133,6 +133,11 @@
 (stem_macro
   (macro_name) @nospell)
 
+; Mostly raw output, not prose: skip the name, target and body. The pass:q and
+; pass:n bodies are skipped too, on purpose: they usually carry HTML, whose tag
+; and attribute names would be flagged.
+(macro_passthrough) @nospell
+
 ; These take keys and UI labels, not prose.
 ((inline_macro
   (macro_name) @_name

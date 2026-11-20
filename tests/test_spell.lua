@@ -60,4 +60,21 @@ T["spellchecks prose and skips AsciiDoc syntax"] = function()
     })
 end
 
+T["skips the passthrough macro but spellchecks prose next to it"] = function()
+    child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/spell.adoc")
+    child.lua([[vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+        "A pass:[wierd_tokn <br>] and a tyypo.",
+        "Also +++<br>wierdd+++ and ++wierdd++ here.",
+    })]])
+    expect.equality(misspelled_words(), { "tyypo" })
+end
+
+T["skips pass macros with substitutions"] = function()
+    child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/spell.adoc")
+    child.lua([[vim.api.nvim_buf_set_lines(0, 0, -1, false, {
+        "See pass:q[<u>Undrline *thiss*</u>] and pass:quotes[*boldd*] and a tyypo.",
+    })]])
+    expect.equality(misspelled_words(), { "tyypo" })
+end
+
 return T
