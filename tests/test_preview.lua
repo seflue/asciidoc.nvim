@@ -75,4 +75,18 @@ T["opens the URL and then follows the cursor"] = function()
     expect.equality(last.uri, child.lua_get("vim.uri_from_bufnr(0)"))
 end
 
+T["follows a switch to another buffer"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.cmd("AsciidocPreview")
+    expect.equality(child.lua_get("vim.wait(10000, function() return #_G.opened > 0 end, 20)"), true)
+    child.lua("vim.wait(300)")
+    child.lua("_G.moved = {}")
+    helpers.edit_with_lsp(child, "tests/fixtures/sections.adoc")
+    local uri = child.lua_get("vim.uri_from_bufnr(0)")
+    child.lua("vim.wait(500, function() return #_G.moved > 0 end, 20)")
+    local last = child.lua_get("_G.moved[#_G.moved]")
+    expect.equality(last ~= vim.NIL and last.uri, uri)
+end
+
 return T
