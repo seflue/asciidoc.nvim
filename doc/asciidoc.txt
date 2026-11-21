@@ -391,6 +391,16 @@ PREVIEW                                          *asciidoc.nvim-preview*
 
     Any other value is reported as an error and nothing is sent.
 
+                                                    *:AsciidocPreviewStop*
+:AsciidocPreviewStop
+    Stop sending the cursor line for the client of the current buffer. The
+    page in the browser stays as it is and the preview server keeps
+    running; |:AsciidocPreview| makes the page follow again. Without an
+    open preview this only shows an info message. The autocommands and the
+    throttle timer are removed once no client follows any more. If the
+    browser cannot be opened, |:AsciidocPreview| reports the error and the
+    page does not follow.
+
 ==============================================================================
 LICENSE                                            *asciidoc.nvim-license*
 

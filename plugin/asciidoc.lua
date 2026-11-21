@@ -29,6 +29,10 @@ end, {
     desc = "Open the AsciiDoc preview in the browser and make it follow the cursor",
 })
 
+vim.api.nvim_create_user_command("AsciidocPreviewStop", function()
+    require("asciidoc.preview").stop()
+end, { desc = "Stop the AsciiDoc preview from following the cursor" })
+
 -- Treesitter Grammar Registration for cathaysia dual-grammar
 -- (asciidoc + asciidoc_inline)
 --

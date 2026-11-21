@@ -14,8 +14,12 @@ local T = MiniTest.new_set({
 local function stub_client()
     child.lua([[
         _G.opened = {}
+        _G.open_fails = false
         vim.ui.open = function(url)
             table.insert(_G.opened, url)
+            if _G.open_fails then
+                return nil, "no browser"
+            end
             return {}, nil
         end
         _G.moved = {}
@@ -130,6 +134,89 @@ T["rejects an unknown mode without sending"] = function()
     child.lua("vim.wait(300)")
     expect.equality(child.lua_get("#_G.requests"), 0)
     expect.equality(child.lua_get("_G.notified[1][2]"), child.lua_get("vim.log.levels.ERROR"))
+end
+
+T["stops sending after AsciidocPreviewStop"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.cmd("AsciidocPreview")
+    wait_opened()
+    child.lua("vim.wait(300)")
+    child.lua("_G.moved = {}")
+    child.api.nvim_win_set_cursor(0, { 3, 0 })
+    child.cmd("doautocmd CursorMoved")
+    expect.equality(child.lua_get("vim.wait(500, function() return #_G.moved > 0 end, 20)"), true)
+    child.cmd("AsciidocPreviewStop")
+    child.lua("vim.wait(300)")
+    child.lua("_G.moved = {}")
+    child.api.nvim_win_set_cursor(0, { 1, 0 })
+    child.cmd("doautocmd CursorMoved")
+    child.lua("vim.wait(300)")
+    expect.equality(child.lua_get("#_G.moved"), 0)
+end
+
+T["follows again when the preview is reopened after a stop"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.cmd("AsciidocPreview")
+    wait_opened()
+    -- Start the throttle timer, so the stop closes one and the reopen needs a new one.
+    child.api.nvim_win_set_cursor(0, { 2, 0 })
+    child.cmd("doautocmd CursorMoved")
+    child.cmd("AsciidocPreviewStop")
+    expect.equality(child.lua_get("vim.fn.exists('#AsciidocPreview')"), 0)
+    child.lua("_G.opened = {}")
+    child.cmd("AsciidocPreview")
+    wait_opened()
+    child.lua("vim.wait(300)")
+    child.lua("_G.moved = {}")
+    child.api.nvim_win_set_cursor(0, { 3, 0 })
+    child.cmd("doautocmd CursorMoved")
+    expect.equality(child.lua_get("vim.wait(500, function() return #_G.moved > 0 end, 20)"), true)
+end
+
+T["a stop after a client restart removes the autocmds"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.cmd("AsciidocPreview")
+    wait_opened()
+    -- The first client goes away while its preview is open.
+    child.lua([[
+        local old = vim.lsp.get_clients({ bufnr = 0, name = "asciidoc" })[1]
+        old:stop(true)
+        vim.wait(5000, function() return old:is_stopped() end, 20)
+    ]])
+    child.cmd("bwipeout!")
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.cmd("AsciidocPreview")
+    wait_opened()
+    child.cmd("AsciidocPreviewStop")
+    expect.equality(child.lua_get("vim.fn.exists('#AsciidocPreview')"), 0)
+end
+
+T["does not follow when the browser fails to open"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.lua("_G.open_fails = true")
+    child.cmd("AsciidocPreview")
+    wait_opened()
+    child.lua("vim.wait(300)")
+    child.api.nvim_win_set_cursor(0, { 3, 0 })
+    child.cmd("doautocmd CursorMoved")
+    child.lua("vim.wait(300)")
+    expect.equality(child.lua_get("#_G.moved"), 0)
+end
+
+T["AsciidocPreviewStop without a preview only informs"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    child.lua([[
+        _G.notified = {}
+        vim.notify = function(msg, level) table.insert(_G.notified, { msg, level }) end
+    ]])
+    child.cmd("AsciidocPreviewStop")
+    expect.equality(child.lua_get("#_G.notified"), 1)
+    expect.equality(child.lua_get("_G.notified[1][2]"), child.lua_get("vim.log.levels.INFO"))
 end
 
 return T

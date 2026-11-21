@@ -23,6 +23,8 @@ Before 1.0, a minor version may contain breaking changes.
   the cursor. `:AsciidocPreview part` previews only the part the buffer
   contributes to a document; `document` (the default) previews the whole
   document.
+- `:AsciidocPreviewStop` stops the page from following the cursor. The
+  browser page and the preview server stay as they are.
 
 ### Changed
 

@@ -87,6 +87,10 @@ included file) instead of the complete document; `:AsciidocPreview
 document` is the default. The full reference is in
 `:help asciidoc.nvim`.
 
+`:AsciidocPreviewStop` stops the page from following the cursor. The page
+stays open and the preview server keeps running; `:AsciidocPreview` makes
+it follow again.
+
 ## Health check
 
 ```vim

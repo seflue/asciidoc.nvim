@@ -110,11 +110,43 @@ function M.open(mode)
         local _, open_err = vim.ui.open(result.url)
         if open_err then
             vim.notify("AsciidocPreview: " .. open_err .. " (" .. result.url .. ")", vim.log.levels.ERROR)
+            return
         end
         open_clients[client.id] = true
         ensure_autocmds()
         send_cursor()
     end, bufnr)
+end
+
+--- Stop telling the server where the cursor is. The page stays as it is.
+function M.stop()
+    local bufnr = vim.api.nvim_get_current_buf()
+    local client = following_client(bufnr)
+    if not client then
+        vim.notify("AsciidocPreviewStop: no preview is following this buffer", vim.log.levels.INFO)
+        return
+    end
+    open_clients[client.id] = nil
+    -- Clients that stopped while following (e.g. after :LspRestart) no
+    -- longer count, or the autocmds would never go away.
+    for id in pairs(open_clients) do
+        local other = vim.lsp.get_client_by_id(id)
+        if not other or other:is_stopped() then
+            open_clients[id] = nil
+        end
+    end
+    if next(open_clients) then
+        return
+    end
+    if group then
+        vim.api.nvim_del_augroup_by_id(group)
+        group = nil
+    end
+    if timer then
+        timer:stop()
+        timer:close()
+        timer = nil
+    end
 end
 
 return M
