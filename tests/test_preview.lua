@@ -30,6 +30,11 @@ local function stub_client()
     ]])
 end
 
+-- Wait until the stubbed vim.ui.open has been called.
+local function wait_opened()
+    expect.equality(child.lua_get("vim.wait(10000, function() return #_G.opened > 0 end, 20)"), true)
+end
+
 T["sends no cursor position before the preview is open"] = function()
     helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
     stub_client()
@@ -43,7 +48,7 @@ T["sends while the cursor keeps moving"] = function()
     helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
     stub_client()
     child.cmd("AsciidocPreview")
-    expect.equality(child.lua_get("vim.wait(10000, function() return #_G.opened > 0 end, 20)"), true)
+    wait_opened()
     child.lua("vim.wait(300)")
     -- Move every 30 ms for 450 ms; a debounce would send nothing until the end.
     child.lua([[
@@ -63,7 +68,7 @@ T["opens the URL and then follows the cursor"] = function()
     helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
     stub_client()
     child.cmd("AsciidocPreview")
-    expect.equality(child.lua_get("vim.wait(10000, function() return #_G.opened > 0 end, 20)"), true)
+    wait_opened()
     expect.equality(child.lua_get("_G.opened[1]:match('^http://127%.0%.0%.1:%d+/') ~= nil"), true)
     child.lua("vim.wait(300)")
     child.lua("_G.moved = {}")
@@ -79,7 +84,7 @@ T["follows a switch to another buffer"] = function()
     helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
     stub_client()
     child.cmd("AsciidocPreview")
-    expect.equality(child.lua_get("vim.wait(10000, function() return #_G.opened > 0 end, 20)"), true)
+    wait_opened()
     child.lua("vim.wait(300)")
     child.lua("_G.moved = {}")
     helpers.edit_with_lsp(child, "tests/fixtures/sections.adoc")
