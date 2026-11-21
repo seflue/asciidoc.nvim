@@ -69,8 +69,26 @@ local function ensure_autocmds()
     })
 end
 
---- Open the preview of the current buffer in the browser.
-function M.open()
+local MODES = { "document", "part" }
+
+--- Complete the optional mode argument of :AsciidocPreview.
+function M.complete_modes(arg_lead)
+    return vim.tbl_filter(function(mode)
+        return vim.startswith(mode, arg_lead)
+    end, MODES)
+end
+
+--- Open the preview of the current buffer in the browser. `mode` is
+--- "document" (default) or "part".
+function M.open(mode)
+    mode = mode or "document"
+    if not vim.tbl_contains(MODES, mode) then
+        vim.notify(
+            "AsciidocPreview: unknown mode '" .. mode .. "' (expected " .. table.concat(MODES, " or ") .. ")",
+            vim.log.levels.ERROR
+        )
+        return
+    end
     local bufnr = vim.api.nvim_get_current_buf()
     local client = vim.lsp.get_clients({ bufnr = bufnr, name = "asciidoc" })[1]
     if not client then
@@ -79,7 +97,7 @@ function M.open()
     end
     client:request("workspace/executeCommand", {
         command = "asciidoc.preview.open",
-        arguments = { vim.uri_from_bufnr(bufnr) },
+        arguments = { vim.uri_from_bufnr(bufnr), { mode = mode } },
     }, function(err, result)
         if err then
             vim.notify("AsciidocPreview: " .. err.message, vim.log.levels.ERROR)

@@ -373,7 +373,7 @@ DEBUGGING                                          *asciidoc.nvim-debug*
 PREVIEW                                          *asciidoc.nvim-preview*
 
                                                         *:AsciidocPreview*
-:AsciidocPreview
+:AsciidocPreview [{mode}]
     Ask `asciidoc-lsp` to start the preview of the current buffer and open
     the returned URL in the browser (|vim.ui.open()|). The server needs
     `asciidoctor` in `$PATH`; an error from the server is shown with
@@ -381,6 +381,15 @@ PREVIEW                                          *asciidoc.nvim-preview*
     server on |CursorMoved|, |CursorMovedI| and |BufEnter| in AsciiDoc
     buffers of the same client, at most every 100 ms, and the page scrolls
     to it. Nothing is sent before the command has succeeded.
+
+                                                  *:AsciidocPreview-mode*
+    The optional {mode} (completed with <Tab>) selects what the page shows:
+
+    `document`  the complete document this buffer belongs to (default)
+    `part`      only the part this buffer contributes, for example an
+                included file
+
+    Any other value is reported as an error and nothing is sent.
 
 ==============================================================================
 LICENSE                                            *asciidoc.nvim-license*

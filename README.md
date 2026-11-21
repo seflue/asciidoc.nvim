@@ -81,7 +81,10 @@ cursor.
 
 `:AsciidocPreview` opens a live preview of the buffer in the browser (the
 server needs `asciidoctor` in `$PATH`). The page follows the cursor, also
-when you move to another AsciiDoc buffer. The full reference is in
+when you move to another AsciiDoc buffer. `:AsciidocPreview part` shows
+only the part of the document that the buffer contributes (for example an
+included file) instead of the complete document; `:AsciidocPreview
+document` is the default. The full reference is in
 `:help asciidoc.nvim`.
 
 ## Health check

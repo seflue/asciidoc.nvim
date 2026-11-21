@@ -19,6 +19,7 @@ local function stub_client()
             return {}, nil
         end
         _G.moved = {}
+        _G.requests = {}
         local client = vim.lsp.get_clients({ bufnr = 0, name = "asciidoc" })[1]
         local notify = client.notify
         client.notify = function(self, method, params)
@@ -26,6 +27,13 @@ local function stub_client()
                 table.insert(_G.moved, params)
             end
             return notify(self, method, params)
+        end
+        local request = client.request
+        client.request = function(self, method, params, ...)
+            if method == "workspace/executeCommand" then
+                table.insert(_G.requests, params)
+            end
+            return request(self, method, params, ...)
         end
     ]])
 end
@@ -92,6 +100,36 @@ T["follows a switch to another buffer"] = function()
     child.lua("vim.wait(500, function() return #_G.moved > 0 end, 20)")
     local last = child.lua_get("_G.moved[#_G.moved]")
     expect.equality(last ~= vim.NIL and last.uri, uri)
+end
+
+T["asks for the whole document by default"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.cmd("AsciidocPreview")
+    wait_opened()
+    expect.equality(child.lua_get("_G.requests[1].arguments[2].mode"), "document")
+end
+
+T["passes the part argument as mode"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.cmd("AsciidocPreview part")
+    wait_opened()
+    expect.equality(child.lua_get("_G.requests[1].arguments[2].mode"), "part")
+    expect.equality(child.lua_get("_G.requests[1].arguments[1]"), child.lua_get("vim.uri_from_bufnr(0)"))
+end
+
+T["rejects an unknown mode without sending"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.lua([[
+        _G.notified = {}
+        vim.notify = function(msg, level) table.insert(_G.notified, { msg, level }) end
+    ]])
+    child.cmd("AsciidocPreview bogus")
+    child.lua("vim.wait(300)")
+    expect.equality(child.lua_get("#_G.requests"), 0)
+    expect.equality(child.lua_get("_G.notified[1][2]"), child.lua_get("vim.log.levels.ERROR"))
 end
 
 return T
