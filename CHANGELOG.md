@@ -10,6 +10,12 @@ Before 1.0, a minor version may contain breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- Section motions `]]`, `[[`, `][`, `[]`, `[u` and `]u` jump to the next,
+  previous, sibling or parent section, or to the next section at the
+  parent's level. Change the keys with `motions.keys`.
+
 ## [0.3.1] - 2026-11-17
 
 ### Fixed

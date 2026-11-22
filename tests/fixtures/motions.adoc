@@ -1,0 +1,51 @@
+= Document Title
+
+Preamble paragraph.
+
+== One
+
+Text one.
+
+=== One A
+
+Text one A.
+
+==== One A x
+
+Deep text.
+
+=== One B
+
+Text one B.
+
+[discrete]
+=== Discrete Heading
+
+After discrete.
+
+== Two
+
+----
+== Not a section
+----
+
+// comment above
+[[three-anchor]]
+[appendix]
+== Three
+
+Text three.
+
+=== Three A
+
+Text three A.
+
+== Four
+
+==== Four skipped
+
+Skipped text.
+
+=== Four B
+
+Text four B.

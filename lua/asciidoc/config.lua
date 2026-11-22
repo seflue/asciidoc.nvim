@@ -21,6 +21,19 @@ local defaults = {
         -- Map `iS` / `aS` (inside / around section) in AsciiDoc buffers.
         enable = true,
     },
+    motions = {
+        -- Map the section motions in AsciiDoc buffers.
+        enable = true,
+        -- Key per motion; false leaves that one unmapped.
+        keys = {
+            next = "]]",
+            prev = "[[",
+            next_sibling = "][",
+            prev_sibling = "[]",
+            parent = "[u",
+            next_parent = "]u",
+        },
+    },
     conceal = {
         -- Hide the delimiters of *strong*, _italic_, `monospace` and #highlighted#
         -- text where `conceallevel` hides concealed text.

@@ -3,7 +3,7 @@
 ![Latest release](https://img.shields.io/github/v/release/seflue/asciidoc.nvim)
 
 AsciiDoc support for Neovim: syntax highlighting, folding, section text
-objects, concealed inline markup, spellcheck for prose only, and a ready-made
+objects and motions, concealed inline markup, spellcheck for prose only, and a ready-made
 setup for the [asciidoc-lsp](https://github.com/seflue/asciidoc-lsp) language
 server (navigation, completion, hover, diagnostics, rename).
 
@@ -52,6 +52,14 @@ vim.g.asciidoc = {
     },
     textobjects = {
         enable = true,         -- iS / aS select a section
+    },
+    motions = {
+        enable = true,         -- jump between sections, see :help asciidoc.nvim-motions
+        keys = {               -- set one to false to leave it unmapped
+            next = "]]", prev = "[[",                -- next / previous section
+            next_sibling = "][", prev_sibling = "[]", -- same level, same parent
+            parent = "[u", next_parent = "]u",       -- enclosing / next at its level
+        },
     },
     conceal = {
         enable = true,         -- hide *strong*, _italic_, `mono` and #mark# delimiters

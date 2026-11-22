@@ -4,7 +4,7 @@
 INTRODUCTION                                              *asciidoc.nvim*
 
 AsciiDoc support for Neovim 0.11+: syntax highlighting, folding, text objects,
-concealed markup, and a ready-made setup for asciidoc-lsp. No setup() call is
+section motions, concealed markup, and a ready-made setup for asciidoc-lsp. No setup() call is
 needed.
 
 ==============================================================================
@@ -70,6 +70,14 @@ Default values: >lua
         },
         textobjects = {
             enable = true,  -- `iS` / `aS`, see |asciidoc.nvim-textobjects|
+        },
+        motions = {
+            enable = true,  -- section motions, see |asciidoc.nvim-motions|
+            keys = {        -- false leaves a key unmapped
+                next = "]]", prev = "[[",
+                next_sibling = "][", prev_sibling = "[]",
+                parent = "[u", next_parent = "]u",
+            },
         },
         conceal = {
             enable = true,  -- hide inline delimiters, see |asciidoc.nvim-conceal|
@@ -214,6 +222,74 @@ With mini.ai, `a` and `i` are mapped globally as well: type `S` within
 
 To turn them off: >lua
     vim.g.asciidoc = { textobjects = { enable = false } }
+<
+Set this before the plugin loads (for example in lazy.nvim's `init`).
+
+==============================================================================
+SECTION MOTIONS                                    *asciidoc.nvim-motions*
+
+In AsciiDoc buffers the plugin maps six section motions in Normal, Visual
+and Operator-pending mode (buffer-local):
+
+                                                        *asciidoc.nvim-]]*
+  `]]`    next section, of any level
+                                                        *asciidoc.nvim-[[*
+  `[[`    previous section, of any level: from body text the title of the
+          section whose content began last before the cursor, which may be
+          a subsection
+                                                        *asciidoc.nvim-][*
+  `][`    next sibling: the next section with the same parent
+                                                        *asciidoc.nvim-[]*
+  `[]`    previous sibling
+                                                        *asciidoc.nvim-[u*
+  `[u`    enclosing section: from body text the title of the section the
+          cursor is in, from a title (or the anchors and attributes above
+          it) the title of its parent
+                                                        *asciidoc.nvim-]u*
+  `]u`    next section at the level `[u` goes to: the next sibling of the
+          section `[u` would reach, so from a title the parent's next
+          sibling
+
+The head of a section, its title with the block anchors and attributes
+above it, counts as the section's start: from any of these lines `]]`
+goes to the section after it and `[[` to the one before.
+
+`][`, `[]`, `[u` and `]u` start from the innermost section around the cursor,
+so they act the same on a title and in the text below it. `][` at the
+last sibling and `[]` at the first find nothing; they never move to
+another level.
+
+A count repeats the motion: `3]]` jumps three sections ahead, `2[u` two
+levels out (like `2aS`), `2]u` two levels out and then to the next
+sibling. Without a target, also when the count reaches
+past the last one, the cursor stays and "No section here" is reported;
+the motions do not wrap around the ends of the document.
+
+In Normal and Visual mode they land in column 0 of the title line and set
+the previous context mark, so |CTRL-O| jumps back. Visual mode extends the
+selection. After an operator the motion is exclusive and ends at the
+start of the target section, including its block anchors and attributes
+above the title: `d]]` deletes up to the next section and keeps its
+anchor. Without a target the operator is cancelled. |.| resolves the
+motion again from the cursor.
+
+Sections are the `section` nodes of the `asciidoc` parser, as the bundled
+`textobjects.scm` query captures them (`@section.outer`), and nest as the
+grammar nests them, also across a skipped level. Headings inside
+delimited blocks, discrete headings (`[discrete]`, `[float]`) and the
+document title are no targets, so `[u` and `]u` on a top-level title
+find nothing.
+
+nvim-orgmode uses `]]` / `[[` for headlines of the same level and `}` /
+`{` for any level; here `]]` / `[[` take any level and `][` / `[]` the
+same one. vim-markdown, where these keys come from, has `]u` for the
+parent; here that is `[u`, so `[` goes back and `]` forward.
+
+To change a key, or turn one off with `false`: >lua
+    vim.g.asciidoc = { motions = { keys = { parent = "gh", next = false } } }
+<
+To turn all of them off: >lua
+    vim.g.asciidoc = { motions = { enable = false } }
 <
 Set this before the plugin loads (for example in lazy.nvim's `init`).
 

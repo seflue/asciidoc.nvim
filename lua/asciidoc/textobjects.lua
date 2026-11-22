@@ -1,54 +1,14 @@
 -- Section text objects `iS` / `aS` built on the bundled textobjects query,
 -- so they select exactly what `@section.inner` / `@section.outer` capture.
 
+local sections = require("asciidoc.sections")
+
 local M = {}
-
---- Return `{ start_row, end_row }` (0-based, end exclusive) for a capture
---- spanning `first` to `last`.
-local function line_span(first, last)
-    local srow = first:range()
-    local _, _, erow, ecol = last:range()
-    return { srow, ecol == 0 and erow or erow + 1 }
-end
-
---- Sections containing 0-based `row`, innermost first. Each entry has
---- `outer` and, unless the section is only a title, `inner`.
-local function sections_at(bufnr, row)
-    local parser = vim.treesitter.get_parser(bufnr, "asciidoc", { error = false })
-    local query = vim.treesitter.query.get("asciidoc", "textobjects")
-    if not parser or not query then
-        return {}
-    end
-    local by_id = {}
-    for _, match in query:iter_matches(parser:parse()[1]:root(), bufnr) do
-        for id, nodes in pairs(match) do
-            local capture = query.captures[id]
-            if capture == "section.outer" or capture == "section.inner" then
-                local section = capture == "section.outer" and nodes[1] or nodes[1]:parent()
-                local entry = by_id[section:id()] or { outer = line_span(section, section) }
-                by_id[section:id()] = entry
-                if capture == "section.inner" then
-                    entry.inner = line_span(nodes[1], nodes[#nodes])
-                end
-            end
-        end
-    end
-    local found = {}
-    for _, entry in pairs(by_id) do
-        if row >= entry.outer[1] and row < entry.outer[2] then
-            found[#found + 1] = entry
-        end
-    end
-    table.sort(found, function(a, b)
-        return a.outer[1] > b.outer[1]
-    end)
-    return found
-end
 
 --- `{ first, last }` (1-based lines) of the `"inner"` or `"outer"` range of
 --- the `count`-th section around `line`, innermost first, or nil.
 local function span_at(kind, line, count)
-    local section = sections_at(0, line - 1)[count]
+    local section = sections.at(0, line - 1)[count]
     local span = section and section[kind]
     return span and { span[1] + 1, span[2] }
 end
