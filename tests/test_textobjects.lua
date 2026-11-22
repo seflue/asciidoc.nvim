@@ -43,6 +43,8 @@ T["section keymaps"] = MiniTest.new_set({
     hooks = {
         pre_case = function()
             child.cmd("edit " .. sections)
+            -- Visual mode spans a closed fold whole
+            child.cmd("setlocal nofoldenable")
         end,
     },
 })
@@ -182,6 +184,7 @@ end
 T["section keymaps work alongside mini.ai"] = function()
     child.lua([[require("mini.ai").setup()]])
     child.cmd("edit " .. sections)
+    child.cmd("setlocal nofoldenable")
     expect.no_equality(child.fn.maparg("i", "x"), "")
     expect.equality(select_lines(14, "vaS"), { "V", 12, 14 })
     child.type_keys("<Esc>")

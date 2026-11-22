@@ -1,0 +1,67 @@
+Intro paragraph.
+
+****
+Sidebar text.
+****
+
+++++
+<b>raw</b>
+++++
+
+> markdown quote
+> second line
+
+,===
+a,b
+c,d
+,===
+
+:===
+a:b
+c:d
+:===
+
+Term:: Definition
+Other:: More
+
+////
+comment
+////
+
+[NOTE]
+====
+Admonition block.
+====
+
+....
+literal
+....
+
+--
+open
+--
+
+____
+quote
+____
+
+|===
+| a | b
+|===
+
+* one
+* two
+
+.Listing title
+[source,rust]
+----
+fn main() {}
+----
+
+****
+Sidebar with nested listing:
+
+----
+nested
+----
+****

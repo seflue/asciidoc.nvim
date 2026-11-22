@@ -15,6 +15,17 @@ Before 1.0, a minor version may contain breaking changes.
 - Section motions `]]`, `[[`, `][`, `[]`, `[u` and `]u` jump to the next,
   previous, sibling or parent section, or to the next section at the
   parent's level. Change the keys with `motions.keys`.
+- Sections and blocks fold without fold configuration: the plugin sets
+  `foldmethod` and `foldexpr` in AsciiDoc buffers (`folds.enable` turns this
+  off). Sidebar, passthrough, markdown-style quote and comment blocks, CSV
+  and DSV tables and description lists fold as well.
+
+### Changed
+
+- With Neovim's default `foldlevel` of 0, AsciiDoc files now open with every
+  fold closed. Set `foldlevelstart` to open them unfolded.
+- A section fold starts at the section title, so a closed fold shows the
+  title instead of an anchor or attribute line above it.
 
 ## [0.3.1] - 2026-11-17
 

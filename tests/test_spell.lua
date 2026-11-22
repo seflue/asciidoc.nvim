@@ -5,7 +5,14 @@ local child = helpers.new_child()
 
 local T = MiniTest.new_set({
     hooks = {
-        pre_case = child.setup,
+        pre_case = function()
+            child.setup()
+            -- With the fold expression's async parse running from `:edit`,
+            -- `]s` at times misses the inline nospell regions. Parse
+            -- synchronously (a private flag of Neovim's tree-sitter runtime)
+            -- so the walk sees the full tree.
+            child.lua("vim.g._ts_force_sync_parsing = true")
+        end,
         post_once = child.stop,
     },
 })

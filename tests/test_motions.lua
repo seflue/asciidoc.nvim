@@ -16,6 +16,8 @@ local T = MiniTest.new_set({
         pre_case = function()
             child.setup()
             child.cmd("edit " .. fixture)
+            -- Visual mode and operators span a closed fold whole
+            child.cmd("setlocal nofoldenable")
         end,
         post_once = child.stop,
     },

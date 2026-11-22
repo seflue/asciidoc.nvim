@@ -36,6 +36,8 @@ end
 -- highlights a token, its colour is the one on screen.
 T["shows the injected language's colour over a source block's body"] = function()
     child.cmd("edit " .. vim.g.asciidoc_nvim_root .. "/tests/fixtures/source_block.adoc")
+    -- a closed fold hides the block body from the screen
+    child.cmd("setlocal nofoldenable")
     local attrs = child.lua_get([[(function()
         vim.o.termguicolors = true
         vim.api.nvim_set_hl(0, "@markup.raw.block", { fg = "#ff0000" })

@@ -61,6 +61,9 @@ vim.g.asciidoc = {
             parent = "[u", next_parent = "]u",       -- enclosing / next at its level
         },
     },
+    folds = {
+        enable = true,         -- fold sections and blocks (foldmethod=expr)
+    },
     conceal = {
         enable = true,         -- hide *strong*, _italic_, `mono` and #mark# delimiters
     },

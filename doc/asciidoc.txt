@@ -79,6 +79,9 @@ Default values: >lua
                 parent = "[u", next_parent = "]u",
             },
         },
+        folds = {
+            enable = true,  -- Tree-sitter folds, see |asciidoc.nvim-folds|
+        },
         conceal = {
             enable = true,  -- hide inline delimiters, see |asciidoc.nvim-conceal|
         },
@@ -292,6 +295,24 @@ To turn all of them off: >lua
     vim.g.asciidoc = { motions = { enable = false } }
 <
 Set this before the plugin loads (for example in lazy.nvim's `init`).
+
+==============================================================================
+FOLDS                                                *asciidoc.nvim-folds*
+
+In AsciiDoc buffers the plugin sets 'foldmethod' to `expr` and 'foldexpr'
+to `v:lua.vim.treesitter.foldexpr()` (window-local). The bundled
+`folds.scm` folds sections and delimited blocks (listing, literal,
+example, open, sidebar, passthrough, quote and comment blocks), tables and
+lists. An admonition paragraph (`NOTE: ...`) does not fold; its block form
+(`[NOTE]` with `====`) does. A section fold starts at the section title,
+so an anchor or attribute line above it stays visible.
+
+The plugin does not set 'foldlevel': with Neovim's default of 0 a file
+opens with every fold closed, and |zR| opens them all. To open files
+unfolded, set 'foldlevelstart', for example `vim.o.foldlevelstart = 99`.
+To leave the fold options alone: >lua
+    vim.g.asciidoc = { folds = { enable = false } }
+<
 
 ==============================================================================
 CONCEAL                                            *asciidoc.nvim-conceal*

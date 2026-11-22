@@ -10,6 +10,10 @@ end
 if require("asciidoc.config").motions.enable ~= false then
     require("asciidoc.motions").attach(0)
 end
+if require("asciidoc.config").folds.enable ~= false then
+    vim.opt_local.foldmethod = "expr"
+    vim.opt_local.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+end
 if require("asciidoc.config").conceal.enable ~= false then
     require("asciidoc.conceal").attach(0)
 end

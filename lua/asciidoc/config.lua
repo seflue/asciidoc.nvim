@@ -34,6 +34,11 @@ local defaults = {
             next_parent = "]u",
         },
     },
+    folds = {
+        -- Fold sections and blocks with Tree-sitter (`foldmethod=expr`).
+        -- Which folds start closed is up to your `foldlevel`.
+        enable = true,
+    },
     conceal = {
         -- Hide the delimiters of *strong*, _italic_, `monospace` and #highlighted#
         -- text where `conceallevel` hides concealed text.
