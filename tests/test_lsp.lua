@@ -70,4 +70,31 @@ T["the server's semantic tokens do not highlight the buffer"] = function()
     )
 end
 
+-- A server stuck in a handler never answers "shutdown". Quitting Neovim must
+-- still end it instead of leaving it running.
+T["quitting Neovim kills a server that hangs on shutdown"] = function()
+    local pid_file = vim.fn.tempname()
+    child.lua(
+        [[vim.lsp.config("asciidoc", { cmd = { vim.v.progpath, "-l", ... } })]],
+        { vim.g.asciidoc_nvim_root .. "/tests/hanging_lsp.lua", pid_file }
+    )
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    local pid = tonumber(vim.fn.readfile(pid_file)[1])
+    vim.fn.delete(pid_file)
+    local function alive()
+        return vim.uv.kill(pid, 0) == 0
+    end
+    expect.equality(alive(), true)
+
+    pcall(child.cmd, "qall!")
+    vim.fn.jobwait({ child.job.id }, 5000)
+    local gone = vim.wait(3000, function()
+        return not alive()
+    end, 50)
+    if not gone then
+        vim.uv.kill(pid, "sigkill")
+    end
+    expect.equality(gone, true)
+end
+
 return T

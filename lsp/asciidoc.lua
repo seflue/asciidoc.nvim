@@ -14,4 +14,8 @@ return {
     on_init = function(client)
         client.server_capabilities.semanticTokensProvider = nil
     end,
+    -- With the default (false) Neovim quits without waiting for the server
+    -- and never kills it, so a server stuck in a handler keeps running.
+    -- Give it a second to shut down, then force-stop it (:h vim.lsp.ClientConfig).
+    exit_timeout = 1000,
 }
