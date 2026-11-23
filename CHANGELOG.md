@@ -19,20 +19,7 @@ Before 1.0, a minor version may contain breaking changes.
   `foldmethod` and `foldexpr` in AsciiDoc buffers (`folds.enable` turns this
   off). Sidebar, passthrough, markdown-style quote and comment blocks, CSV
   and DSV tables and description lists fold as well.
-- `:AsciidocPreview` opens a live preview in the browser; the page follows
-  the cursor. `:AsciidocPreview part` previews only the part the buffer
-  contributes to a document; `document` (the default) previews the whole
-  document.
-- `:AsciidocPreviewStop` stops the page from following the cursor. The
-  browser page and the preview server stay as they are.
-- `:AsciidocPreview debug on|off|show` switches the preview's scroll-sync
-  debug log and shows what the server sent next to what the page made of
-  it.
-- `:AsciidocPreview toc auto|off|left|right` chooses the preview's table of
-  contents, like the TOC select in the page.
-- The preview works back towards the editor: scrolling the page scrolls the
-  window, and a double-click on a block opens its source line, also in an
-  included file.
+- Live preview: `:AsciidocPreview` and `:AsciidocPreviewStop`.
 
 ### Changed
 
@@ -44,6 +31,16 @@ Before 1.0, a minor version may contain breaking changes.
   current directory, before the nearest `.asciidoctorconfig`. A config file
   in a subfolder no longer makes that folder the root, which hid the
   documents that include its files and the images outside it.
+- Spellcheck covers paragraphs in quote blocks and skips `pass:[]` macros.
+- `:checkhealth asciidoc` recognizes local server builds
+  (`X.Y.Z+<commits>.<hash>`) and warns about a build without a release tag.
+
+### Fixed
+
+- Highlighting: listings without a style, literal blocks, every paragraph of
+  an admonition block, source styles, autolink brackets and revision lines.
+  Prose words such as "link" no longer look like macros.
+- Quitting Neovim stops a language server that hangs on shutdown.
 
 ## [0.3.1] - 2026-11-17
 
