@@ -414,8 +414,10 @@ end
 
 T["completes the modes, debug and its actions"] = function()
     helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
-    expect.equality(child.fn.getcompletion("AsciidocPreview ", "cmdline"), { "document", "part", "debug" })
+    expect.equality(child.fn.getcompletion("AsciidocPreview ", "cmdline"), { "document", "part", "debug", "toc" })
     expect.equality(child.fn.getcompletion("AsciidocPreview d", "cmdline"), { "document", "debug" })
+    expect.equality(child.fn.getcompletion("AsciidocPreview toc ", "cmdline"), { "auto", "off", "left", "right" })
+    expect.equality(child.fn.getcompletion("AsciidocPreview toc l", "cmdline"), { "left" })
     expect.equality(child.fn.getcompletion("AsciidocPreview debug ", "cmdline"), { "on", "off", "show" })
     expect.equality(child.fn.getcompletion("AsciidocPreview debug o", "cmdline"), { "on", "off" })
     expect.equality(child.fn.getcompletion("AsciidocPreview part ", "cmdline"), {})
@@ -472,6 +474,45 @@ T["debug rejects an unknown action without sending"] = function()
     expect.equality(child.lua_get("#_G.requests"), 0)
     expect.equality(child.lua_get("#_G.notified"), 2)
     expect.equality(child.lua_get("_G.notified[2][2]"), child.lua_get("vim.log.levels.ERROR"))
+end
+
+T["toc sets the preview's TOC on the server"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.cmd("AsciidocPreview")
+    wait_opened()
+    capture_notify()
+    child.cmd("AsciidocPreview toc left")
+    wait_notified(1)
+    expect.equality(child.lua_get("_G.requests[2]"), { command = "asciidoc.preview.toc", arguments = { "left" } })
+    expect.equality(child.lua_get("_G.notified[1]"), { "AsciidocPreview: toc left", child.lua_get("vim.log.levels.INFO") })
+end
+
+T["toc without an open preview reports the server's error"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    capture_notify()
+    child.cmd("AsciidocPreview toc off")
+    wait_notified(1)
+    expect.equality(child.lua_get("_G.notified[1][2]"), child.lua_get("vim.log.levels.ERROR"))
+    expect.equality(child.lua_get("_G.notified[1][1]:find('no preview is open', 1, true) ~= nil"), true)
+end
+
+T["toc rejects a missing or unknown value without sending"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    capture_notify()
+    child.cmd("AsciidocPreview toc top")
+    child.cmd("AsciidocPreview toc")
+    expect.equality(child.lua_get("#_G.requests"), 0)
+    expect.equality(child.lua_get("#_G.notified"), 2)
+    for i = 1, 2 do
+        expect.equality(child.lua_get("_G.notified[" .. i .. "][2]"), child.lua_get("vim.log.levels.ERROR"))
+        expect.equality(
+            child.lua_get("_G.notified[" .. i .. "][1]:find('auto, off, left, right', 1, true) ~= nil"),
+            true
+        )
+    end
 end
 
 T["debug show opens the log as a table"] = function()

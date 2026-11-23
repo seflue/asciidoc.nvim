@@ -91,6 +91,11 @@ document` is the default. The full reference is in
 the page report how it placed it; `:AsciidocPreview debug show` lists both
 side by side, `debug off` switches it off again.
 
+`:AsciidocPreview toc auto|off|left|right` chooses the page's table of
+contents, like the TOC select in the page. `auto` (the default) takes the
+document's `:toc: left|right`, else shows a sidebar on the left for a long
+document and none for a short one.
+
 `:AsciidocPreviewStop` stops the page from following the cursor. The page
 stays open and the preview server keeps running; `:AsciidocPreview` makes
 it follow again.

@@ -157,6 +157,7 @@ end
 
 local MODES = { "document", "part" }
 local DEBUG_ACTIONS = { "on", "off", "show" }
+local TOC_MODES = { "auto", "off", "left", "right" }
 
 local function starting_with(arg_lead, words)
     return vim.tbl_filter(function(word)
@@ -164,16 +165,19 @@ local function starting_with(arg_lead, words)
     end, words)
 end
 
---- Complete the arguments of :AsciidocPreview: a mode or `debug`, and
---- after `debug` its action.
+--- Complete the arguments of :AsciidocPreview: a mode, `debug` or `toc`,
+--- and after `debug` its action, after `toc` its value.
 function M.complete_args(arg_lead, cmdline)
     local words = vim.split(vim.trim(cmdline), "%s+")
     local done = #words - (arg_lead == "" and 0 or 1)
     if done == 1 then
-        return starting_with(arg_lead, vim.list_extend(vim.list_slice(MODES), { "debug" }))
+        return starting_with(arg_lead, vim.list_extend(vim.list_slice(MODES), { "debug", "toc" }))
     end
     if done == 2 and words[2] == "debug" then
         return starting_with(arg_lead, DEBUG_ACTIONS)
+    end
+    if done == 2 and words[2] == "toc" then
+        return starting_with(arg_lead, TOC_MODES)
     end
     return {}
 end
@@ -371,6 +375,34 @@ function M.debug(action)
         else
             vim.notify("AsciidocPreview: debug " .. action, vim.log.levels.INFO)
         end
+    end, bufnr)
+end
+
+--- :AsciidocPreview toc auto|off|left|right: set the preview's TOC on the
+--- server, for every page of the preview.
+function M.toc(mode)
+    if not vim.tbl_contains(TOC_MODES, mode) then
+        vim.notify(
+            "AsciidocPreview toc: expected " .. table.concat(TOC_MODES, ", ") .. ", got '" .. tostring(mode) .. "'",
+            vim.log.levels.ERROR
+        )
+        return
+    end
+    local bufnr = vim.api.nvim_get_current_buf()
+    local client = vim.lsp.get_clients({ bufnr = bufnr, name = "asciidoc" })[1]
+    if not client then
+        vim.notify("AsciidocPreview: asciidoc-lsp is not attached to this buffer", vim.log.levels.ERROR)
+        return
+    end
+    client:request("workspace/executeCommand", {
+        command = "asciidoc.preview.toc",
+        arguments = { mode },
+    }, function(err)
+        if err then
+            vim.notify("AsciidocPreview: " .. err.message, vim.log.levels.ERROR)
+            return
+        end
+        vim.notify("AsciidocPreview: toc " .. mode, vim.log.levels.INFO)
     end, bufnr)
 end
 

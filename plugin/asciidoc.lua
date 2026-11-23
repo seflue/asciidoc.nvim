@@ -23,6 +23,8 @@ vim.api.nvim_create_user_command("AsciidocPreview", function(opts)
     local preview = require("asciidoc.preview")
     if opts.fargs[1] == "debug" then
         preview.debug(opts.fargs[2])
+    elseif opts.fargs[1] == "toc" then
+        preview.toc(opts.fargs[2])
     else
         preview.open(opts.fargs[1])
     end
@@ -32,7 +34,7 @@ end, {
         return require("asciidoc.preview").complete_args(arg_lead, cmdline)
     end,
     desc = "Open the AsciiDoc preview in the browser and make it follow the cursor; "
-        .. "`debug on|off|show` for its scroll-sync log",
+        .. "`debug on|off|show` for its scroll-sync log, `toc auto|off|left|right` for its TOC",
 })
 
 vim.api.nvim_create_user_command("AsciidocPreviewStop", function()

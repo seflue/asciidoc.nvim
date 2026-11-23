@@ -28,6 +28,8 @@ Before 1.0, a minor version may contain breaking changes.
 - `:AsciidocPreview debug on|off|show` switches the preview's scroll-sync
   debug log and shows what the server sent next to what the page made of
   it.
+- `:AsciidocPreview toc auto|off|left|right` chooses the preview's table of
+  contents, like the TOC select in the page.
 - The preview works back towards the editor: scrolling the page scrolls the
   window, and a double-click on a block opens its source line, also in an
   included file.

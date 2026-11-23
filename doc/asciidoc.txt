@@ -422,6 +422,24 @@ PREVIEW                                          *asciidoc.nvim-preview*
     With `ASCIIDOC_LSP_LOG=debug` the server also writes both sides to its
     log. Without an open preview the server's error is shown.
 
+                                                   *:AsciidocPreview-toc*
+:AsciidocPreview toc {mode}
+    The table of contents of the open preview, for every page of it; the
+    page's TOC select follows. The document and the build stay as they
+    are. {mode} (completed with <Tab>):
+
+    `auto`   the default: the document's `:toc: left` or `:toc: right`;
+             otherwise a sidebar on the left if the document has more than
+             one level-1 section and more than five of level 2 or deeper,
+             else none. Decided when the preview shows a document or the
+             document's own `:toc:` changes, not on every change.
+    `off`    no table of contents.
+    `left`   a sidebar on the left.
+    `right`  a sidebar on the right.
+
+    A missing or unknown {mode} is reported as an error and nothing is
+    sent. Without an open preview the server's error is shown.
+
                                                     *:AsciidocPreviewStop*
 :AsciidocPreviewStop
     Stop sending the cursor line for the client of the current buffer. The
