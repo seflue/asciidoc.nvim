@@ -40,6 +40,10 @@ Before 1.0, a minor version may contain breaking changes.
   fold closed. Set `foldlevelstart` to open them unfolded.
 - A section fold starts at the section title, so a closed fold shows the
   title instead of an anchor or attribute line above it.
+- The workspace root is the repository (`.git`, `.jj`, `.hg`), then the
+  current directory, before the nearest `.asciidoctorconfig`. A config file
+  in a subfolder no longer makes that folder the root, which hid the
+  documents that include its files and the images outside it.
 
 ## [0.3.1] - 2026-11-17
 

@@ -138,7 +138,9 @@ local function ensure_autocmds()
         end
     end, vim.api.nvim_create_namespace("AsciidocPreviewKeys"))
     group = vim.api.nvim_create_augroup("AsciidocPreview", { clear = true })
-    vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI", "BufEnter" }, {
+    -- LspAttach: a `root_dir` function attaches the client after BufEnter
+    -- (Neovim schedules the start), so entering a new file sends from there.
+    vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI", "BufEnter", "LspAttach" }, {
         group = group,
         desc = "Tell asciidoc-lsp where the cursor is while a preview is open",
         callback = function(args)

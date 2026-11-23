@@ -1,7 +1,11 @@
 return {
     cmd = { 'asciidoc-lsp' },
     filetypes = { 'asciidoc' },
-    root_markers = { '.asciidoctorconfig.adoc', '.asciidoctorconfig', '.git' },
+    -- Repository, then cwd, then config folder, then file folder: see
+    -- lua/asciidoc/root.lua. Override with vim.lsp.config('asciidoc', { root_dir = ... }).
+    root_dir = function(bufnr, on_dir)
+        require('asciidoc.root').root_dir(bufnr, on_dir)
+    end,
     -- Let the server watch .asciidoctorconfig and .adoc files on disk.
     -- Neovim merges this into its default client capabilities.
     capabilities = {

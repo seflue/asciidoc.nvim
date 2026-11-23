@@ -103,6 +103,20 @@ highlights (|lsp-semantic-highlight|). `lsp/asciidoc.lua` does this in
 `on_init`. If you set your own `on_init`, it replaces that one: add >lua
     client.server_capabilities.semanticTokensProvider = nil
 <
+                                                   *asciidoc.nvim-root*
+The workspace root is where the server looks for the documents that
+include a file, so it has to hold the whole project. The first that
+applies:
+1. the repository that holds the file (`.git`, `.jj`, `.hg`),
+2. the current directory, if it holds the file and is not the home folder,
+3. the nearest folder with an `.asciidoctorconfig` or
+   `.asciidoctorconfig.adoc`,
+4. the file's own folder.
+To choose it yourself: >lua
+    vim.lsp.config('asciidoc', {
+        root_dir = function(bufnr, on_dir) on_dir('/path/to/docs') end,
+    })
+<
                                               *asciidoc.nvim-file-watching*
 The LSP config lets `asciidoc-lsp` watch `.asciidoctorconfig` and `.adoc`
 files (`workspace.didChangeWatchedFiles.dynamicRegistration`), so changes
