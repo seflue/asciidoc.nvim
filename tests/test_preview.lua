@@ -219,4 +219,197 @@ T["AsciidocPreviewStop without a preview only informs"] = function()
     expect.equality(child.lua_get("_G.notified[1][2]"), child.lua_get("vim.log.levels.INFO"))
 end
 
+-- Open the preview on a 200-line buffer, cursor and view on line 1.
+local function open_long_buffer()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.lua([[
+        local lines = {}
+        for i = 1, 200 do lines[i] = "Line " .. i end
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
+        vim.api.nvim_win_set_cursor(0, { 1, 0 })
+        vim.fn.winrestview({ topline = 1 })
+    ]])
+    child.cmd("AsciidocPreview")
+    wait_opened()
+    child.lua("vim.wait(300)")
+end
+
+-- Deliver asciidoc/revealLine from the buffer's client, as the server sends it.
+local function reveal(uri, line, cursor)
+    child.lua(
+        [[
+        local uri, line, cursor = ...
+        local client = vim.lsp.get_clients({ bufnr = 0, name = "asciidoc" })[1]
+        local handler = client.handlers["asciidoc/revealLine"] or vim.lsp.handlers["asciidoc/revealLine"]
+        handler(nil, { uri = uri, line = line, cursor = cursor }, { client_id = client.id, method = "asciidoc/revealLine" })
+    ]],
+        { uri, line, cursor == true }
+    )
+end
+
+T["revealLine puts the line at the top of the window"] = function()
+    open_long_buffer()
+    -- LSP line 99 is buffer line 100.
+    reveal(child.lua_get("vim.uri_from_bufnr(0)"), 99)
+    expect.equality(child.lua_get("vim.fn.line('w0')"), 100)
+end
+
+T["revealLine for another file changes nothing"] = function()
+    open_long_buffer()
+    reveal(vim.uri_from_fname("/elsewhere/other.adoc"), 99)
+    expect.equality(child.lua_get("vim.fn.line('w0')"), 1)
+    expect.equality(child.lua_get("vim.api.nvim_win_get_cursor(0)[1]"), 1)
+end
+
+T["revealLine does not scroll when the line is already at the top"] = function()
+    open_long_buffer()
+    child.lua("vim.api.nvim_win_set_cursor(0, { 60, 0 }); vim.fn.winrestview({ topline = 50 })")
+    local uri = child.lua_get("vim.uri_from_bufnr(0)")
+    -- Buffer lines 50 and 51: the page's rounding, not a move.
+    reveal(uri, 49)
+    expect.equality(child.lua_get("vim.fn.line('w0')"), 50)
+    reveal(uri, 50)
+    expect.equality(child.lua_get("vim.fn.line('w0')"), 50)
+end
+
+T["revealLine is ignored while no preview follows the buffer"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    child.lua([[
+        local lines = {}
+        for i = 1, 200 do lines[i] = "Line " .. i end
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
+        require("asciidoc.preview")
+    ]])
+    child.lua(
+        "require('asciidoc.preview').on_reveal_line(nil, { uri = ..., line = 99 })",
+        { child.lua_get("vim.uri_from_bufnr(0)") }
+    )
+    expect.equality(child.lua_get("vim.fn.line('w0')"), 1)
+end
+
+T["revealLine with cursor puts the cursor on a line that is already in view"] = function()
+    open_long_buffer()
+    -- The window shows line 1 on: the view has nothing to do.
+    child.lua("vim.api.nvim_win_set_cursor(0, { 3, 2 })")
+    reveal(child.lua_get("vim.uri_from_bufnr(0)"), 9, true)
+    expect.equality(child.lua_get("vim.fn.line('w0')"), 1)
+    expect.equality(child.lua_get("vim.api.nvim_win_get_cursor(0)"), { 10, 0 })
+end
+
+T["revealLine with cursor puts a line out of view at the top, with the cursor"] = function()
+    open_long_buffer()
+    child.lua("vim.api.nvim_win_set_cursor(0, { 150, 4 }); vim.fn.winrestview({ topline = 140 })")
+    -- Let the setup's own cursor report go out first.
+    child.cmd("doautocmd CursorMoved")
+    child.lua("vim.wait(300)")
+    child.lua("_G.moved = {}")
+    reveal(child.lua_get("vim.uri_from_bufnr(0)"), 0, true)
+    expect.equality(child.lua_get("vim.fn.line('w0')"), 1)
+    expect.equality(child.lua_get("vim.api.nvim_win_get_cursor(0)"), { 1, 0 })
+    child.cmd("doautocmd CursorMoved")
+    child.lua("vim.wait(300)")
+    expect.equality(child.lua_get("#_G.moved"), 0)
+end
+
+T["revealLine with cursor past the end of the file goes to its last line"] = function()
+    open_long_buffer()
+    reveal(child.lua_get("vim.uri_from_bufnr(0)"), 2147483646, true)
+    local last = child.lua_get("vim.api.nvim_buf_line_count(0)")
+    expect.equality(child.lua_get("vim.api.nvim_win_get_cursor(0)"), { last, 0 })
+end
+
+T["revealLine without cursor leaves a cursor in the new view where it is"] = function()
+    open_long_buffer()
+    child.lua("vim.api.nvim_win_set_cursor(0, { 15, 2 })")
+    reveal(child.lua_get("vim.uri_from_bufnr(0)"), 9)
+    expect.equality(child.lua_get("vim.fn.line('w0')"), 10)
+    expect.equality(child.lua_get("vim.api.nvim_win_get_cursor(0)"), { 15, 2 })
+end
+
+T["the cursor move a revealLine forces is not sent back"] = function()
+    open_long_buffer()
+    child.lua("_G.moved = {}")
+    reveal(child.lua_get("vim.uri_from_bufnr(0)"), 99)
+    -- The cursor had to follow the view.
+    expect.equality(child.lua_get("vim.api.nvim_win_get_cursor(0)[1] >= 100"), true)
+    child.cmd("doautocmd CursorMoved")
+    child.lua("vim.wait(300)")
+    expect.equality(child.lua_get("#_G.moved"), 0)
+end
+
+T["the cursor steps of an animated revealLine are not sent back"] = function()
+    -- Animated scrolling (mini.animate) walks the cursor from where it was
+    -- to where revealLine put it, one CursorMoved per step, and takes
+    -- longer than the echo window.
+    open_long_buffer()
+    child.lua("vim.api.nvim_win_set_cursor(0, { 150, 0 }); vim.fn.winrestview({ topline = 140 })")
+    child.cmd("doautocmd CursorMoved")
+    child.lua("vim.wait(300)")
+    child.lua("_G.moved = {}")
+    reveal(child.lua_get("vim.uri_from_bufnr(0)"), 99)
+    local target = child.lua_get("vim.api.nvim_win_get_cursor(0)[1]")
+    -- Steps past the start, as overlapping animations produce them, and
+    -- long after the reveal: no key was typed, so none is the user's.
+    for _, row in ipairs({ 148, 160, 132, target + 2, target - 3, target }) do
+        child.lua("vim.api.nvim_win_set_cursor(0, { ... , 0 })", { row })
+        child.cmd("doautocmd CursorMoved")
+        child.lua("vim.wait(120)")
+    end
+    child.lua("vim.wait(300)")
+    expect.equality(child.lua_get("#_G.moved"), 0)
+end
+
+T["revealLine puts the line at the top of the window also with wrapped lines"] = function()
+    open_long_buffer()
+    child.lua([[
+        local lines = {}
+        for i = 1, 200 do lines[i] = "Line " .. i .. " " .. string.rep("word ", 60) end
+        vim.api.nvim_buf_set_lines(0, 0, -1, false, lines)
+        vim.wo.wrap = true
+        vim.api.nvim_win_set_cursor(0, { 150, 0 })
+    ]])
+    reveal(child.lua_get("vim.uri_from_bufnr(0)"), 9)
+    expect.equality(child.lua_get("vim.fn.line('w0')"), 10)
+end
+
+T["a cursor move of the user right after a revealLine is sent, also on the reveal's way"] = function()
+    open_long_buffer()
+    child.lua("vim.api.nvim_win_set_cursor(0, { 150, 0 }); vim.fn.winrestview({ topline = 140 })")
+    child.cmd("doautocmd CursorMoved")
+    child.lua("vim.wait(300)")
+    reveal(child.lua_get("vim.uri_from_bufnr(0)"), 99)
+    child.cmd("doautocmd CursorMoved")
+    child.lua("_G.moved = {}")
+    -- Typed at once, to a row between where the cursor was and where it went.
+    child.type_keys("130G")
+    expect.equality(child.lua_get("vim.wait(500, function() return #_G.moved > 0 end, 20)"), true)
+    expect.equality(child.lua_get("_G.moved[#_G.moved].line"), 129)
+end
+
+T["entering another buffer after a revealLine is reported without a typed key"] = function()
+    -- A double-click in the page opens a file by window/showDocument, which
+    -- types nothing; going back to the revealed buffer must be reported.
+    open_long_buffer()
+    local uri = child.lua_get("vim.uri_from_bufnr(0)")
+    reveal(uri, 99)
+    child.lua("_G.revealed = vim.api.nvim_get_current_buf()")
+    child.lua("vim.cmd.enew(); vim.wait(200)")
+    child.lua("_G.moved = {}")
+    child.lua("vim.api.nvim_set_current_buf(_G.revealed)")
+    expect.equality(child.lua_get("vim.wait(500, function() return #_G.moved > 0 end, 20)"), true)
+    expect.equality(child.lua_get("_G.moved[#_G.moved].uri"), uri)
+end
+
+T["a cursor report still pending when a revealLine arrives does not send the forced cursor"] = function()
+    open_long_buffer()
+    child.lua("_G.moved = {}")
+    -- The user's G starts the send throttle; the reveal lands before it fires.
+    child.type_keys("G")
+    reveal(child.lua_get("vim.uri_from_bufnr(0)"), 49, true)
+    child.lua("vim.wait(300)")
+    local lines = child.lua_get("vim.tbl_map(function(m) return m.line end, _G.moved)")
+    expect.equality(vim.tbl_contains(lines, 49), false)
+end
+
 return T

@@ -382,6 +382,20 @@ PREVIEW                                          *asciidoc.nvim-preview*
     buffers of the same client, at most every 100 ms, and the page scrolls
     to it. Nothing is sent before the command has succeeded.
 
+    The page also works towards the editor; both can be switched off in
+    the page:
+    - Scrolling the page puts the line on its reading line, a quarter
+      down the page, at the top of the window (`asciidoc/revealLine`), in
+      the current buffer only. Nothing happens when that line is already
+      at the top; the cursor moves only as far as the new view needs, and
+      that move is not sent back to the page.
+    - When a chapter of an included file crosses the reading line, the
+      cursor goes to its `include::` line; at the top and the end of the
+      page it goes to the first and the last line.
+    - A double-click on a block opens its source line, also in another
+      file (`window/showDocument`, Neovim's own handler). Neovim cannot
+      bring the terminal to the front; switch to it yourself.
+
                                                   *:AsciidocPreview-mode*
     The optional {mode} (completed with <Tab>) selects what the page shows:
 

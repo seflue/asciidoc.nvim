@@ -91,6 +91,11 @@ document` is the default. The full reference is in
 stays open and the preview server keeps running; `:AsciidocPreview` makes
 it follow again.
 
+The other way round, scrolling the page scrolls the window to the same
+place (in a file of includes, the cursor goes to the include of the chapter
+you read), and a double-click on a block in the page opens its source line,
+also in an included file. Both can be switched off in the page.
+
 ## Health check
 
 ```vim
