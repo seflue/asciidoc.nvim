@@ -87,6 +87,10 @@ included file) instead of the complete document; `:AsciidocPreview
 document` is the default. The full reference is in
 `:help asciidoc.nvim`.
 
+`:AsciidocPreview debug on` makes the server number each cursor line and
+the page report how it placed it; `:AsciidocPreview debug show` lists both
+side by side, `debug off` switches it off again.
+
 `:AsciidocPreviewStop` stops the page from following the cursor. The page
 stays open and the preview server keeps running; `:AsciidocPreview` makes
 it follow again.

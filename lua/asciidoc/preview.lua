@@ -156,12 +156,26 @@ local function ensure_autocmds()
 end
 
 local MODES = { "document", "part" }
+local DEBUG_ACTIONS = { "on", "off", "show" }
 
---- Complete the optional mode argument of :AsciidocPreview.
-function M.complete_modes(arg_lead)
-    return vim.tbl_filter(function(mode)
-        return vim.startswith(mode, arg_lead)
-    end, MODES)
+local function starting_with(arg_lead, words)
+    return vim.tbl_filter(function(word)
+        return vim.startswith(word, arg_lead)
+    end, words)
+end
+
+--- Complete the arguments of :AsciidocPreview: a mode or `debug`, and
+--- after `debug` its action.
+function M.complete_args(arg_lead, cmdline)
+    local words = vim.split(vim.trim(cmdline), "%s+")
+    local done = #words - (arg_lead == "" and 0 or 1)
+    if done == 1 then
+        return starting_with(arg_lead, vim.list_extend(vim.list_slice(MODES), { "debug" }))
+    end
+    if done == 2 and words[2] == "debug" then
+        return starting_with(arg_lead, DEBUG_ACTIONS)
+    end
+    return {}
 end
 
 --- Open the preview of the current buffer in the browser. `mode` is
@@ -201,6 +215,162 @@ function M.open(mode)
         open_clients[client.id] = true
         ensure_autocmds()
         send_cursor()
+    end, bufnr)
+end
+
+-- JSON null arrives as vim.NIL, which Lua counts as true.
+local function value(field)
+    if field == vim.NIL then
+        return nil
+    end
+    return field
+end
+
+local function cell(field)
+    field = value(field)
+    if field == nil then
+        return ""
+    end
+    return (tostring(field):gsub("|", "\\|"))
+end
+
+local function place(file, line)
+    if value(file) == nil then
+        return ""
+    end
+    local text = vim.fs.basename(file)
+    if value(line) ~= nil then
+        text = text .. ":" .. tostring(line)
+    end
+    return cell(text)
+end
+
+local function anchor_cell(anchor)
+    anchor = value(anchor)
+    if anchor == nil then
+        return ""
+    end
+    return cell(tostring(value(anchor.line)) .. "@" .. tostring(value(anchor.y)) .. " " .. tostring(value(anchor.what)))
+end
+
+local function scroll_cell(report)
+    if report.kind == "scroll" then
+        return cell(report.scrollY)
+    end
+    if value(report.skipped) ~= nil then
+        return cell(report.scrollBefore)
+    end
+    return cell(report.scrollBefore) .. "→" .. cell(report.scrollAfter)
+end
+
+local function note_cell(report)
+    if report.kind == "html" then
+        return value(report.following) and "following" or ("keep line " .. cell(report.keepLine))
+    end
+    if report.kind == "scroll" then
+        return value(report.cursor) and "to editor, with cursor" or "to editor"
+    end
+    if value(report.skipped) ~= nil then
+        return "skipped: " .. cell(report.skipped)
+    end
+    return ""
+end
+
+local function report_cells(report)
+    local src = ""
+    if report.kind == "reveal" then
+        src = value(report.src) == nil and "main" or cell(report.src)
+    end
+    return {
+        cell(report.kind),
+        place(report.file, report.line),
+        src,
+        anchor_cell(report.prev),
+        anchor_cell(report.next),
+        cell(report.target),
+        cell(report.action),
+        scroll_cell(report),
+        cell(report.viewport),
+        note_cell(report),
+    }
+end
+
+local function row(cells)
+    local text = "| " .. table.concat(cells, " | ") .. " |"
+    return (text:gsub("  +", " "))
+end
+
+--- The debug log (`{enabled, pairs}` from asciidoc.preview.debug show) as
+--- a markdown table: per cursor event the line the server sent and, beside
+--- it, each report of the page on it, with the file and line the page
+--- worked with (`page`).
+function M.debug_table(log)
+    local lines = {
+        "# Preview scroll debug (" .. (value(log.enabled) and "on" or "off") .. ")",
+        "",
+        "| seq | sent | kind | page | src | prev | next | target | action | scrollY | viewport | note |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
+    }
+    for _, pair in ipairs(value(log.pairs) or {}) do
+        local sent = "(unpaired)"
+        if value(pair.sent) ~= nil then
+            sent = place(pair.sent.file, pair.sent.line)
+        end
+        if #pair.page == 0 then
+            table.insert(lines, row({ cell(pair.seq), sent, "–", "", "", "", "", "", "", "", "", "no report" }))
+        end
+        for i, report in ipairs(pair.page) do
+            local head = i == 1 and { cell(pair.seq), sent } or { "", "" }
+            table.insert(lines, row(vim.list_extend(head, report_cells(report))))
+        end
+    end
+    return lines
+end
+
+local function show_table(log)
+    if type(log) ~= "table" then
+        vim.notify("AsciidocPreview: asciidoc-lsp returned no debug log", vim.log.levels.ERROR)
+        return
+    end
+    vim.cmd("botright new")
+    local buf = vim.api.nvim_get_current_buf()
+    vim.bo[buf].buftype = "nofile"
+    vim.bo[buf].bufhidden = "wipe"
+    vim.bo[buf].swapfile = false
+    vim.api.nvim_buf_set_lines(buf, 0, -1, false, M.debug_table(log))
+    vim.bo[buf].modifiable = false
+    vim.bo[buf].filetype = "markdown"
+end
+
+--- :AsciidocPreview debug on|off|show: switch the preview's scroll-sync
+--- debug log on the server, or show it in a split.
+function M.debug(action)
+    if not vim.tbl_contains(DEBUG_ACTIONS, action) then
+        vim.notify(
+            "AsciidocPreview debug: expected " .. table.concat(DEBUG_ACTIONS, ", ") .. ", got '" .. tostring(action) .. "'",
+            vim.log.levels.ERROR
+        )
+        return
+    end
+    local bufnr = vim.api.nvim_get_current_buf()
+    local client = vim.lsp.get_clients({ bufnr = bufnr, name = "asciidoc" })[1]
+    if not client then
+        vim.notify("AsciidocPreview: asciidoc-lsp is not attached to this buffer", vim.log.levels.ERROR)
+        return
+    end
+    client:request("workspace/executeCommand", {
+        command = "asciidoc.preview.debug",
+        arguments = { action },
+    }, function(err, result)
+        if err then
+            vim.notify("AsciidocPreview: " .. err.message, vim.log.levels.ERROR)
+            return
+        end
+        if action == "show" then
+            show_table(result)
+        else
+            vim.notify("AsciidocPreview: debug " .. action, vim.log.levels.INFO)
+        end
     end, bufnr)
 end
 

@@ -412,4 +412,141 @@ T["a cursor report still pending when a revealLine arrives does not send the for
     expect.equality(vim.tbl_contains(lines, 49), false)
 end
 
+T["completes the modes, debug and its actions"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    expect.equality(child.fn.getcompletion("AsciidocPreview ", "cmdline"), { "document", "part", "debug" })
+    expect.equality(child.fn.getcompletion("AsciidocPreview d", "cmdline"), { "document", "debug" })
+    expect.equality(child.fn.getcompletion("AsciidocPreview debug ", "cmdline"), { "on", "off", "show" })
+    expect.equality(child.fn.getcompletion("AsciidocPreview debug o", "cmdline"), { "on", "off" })
+    expect.equality(child.fn.getcompletion("AsciidocPreview part ", "cmdline"), {})
+end
+
+-- Capture notifications instead of showing them.
+local function capture_notify()
+    child.lua([[
+        _G.notified = {}
+        vim.notify = function(msg, level) table.insert(_G.notified, { msg, level }) end
+    ]])
+end
+
+-- Wait until `count` notifications have arrived.
+local function wait_notified(count)
+    expect.equality(
+        child.lua_get("vim.wait(10000, function() return #_G.notified >= " .. count .. " end, 20)"),
+        true
+    )
+end
+
+T["debug on and off switch the server's debug log"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.cmd("AsciidocPreview")
+    wait_opened()
+    capture_notify()
+    child.cmd("AsciidocPreview debug on")
+    wait_notified(1)
+    expect.equality(child.lua_get("_G.requests[2]"), { command = "asciidoc.preview.debug", arguments = { "on" } })
+    expect.equality(child.lua_get("_G.notified[1]"), { "AsciidocPreview: debug on", child.lua_get("vim.log.levels.INFO") })
+    child.cmd("AsciidocPreview debug off")
+    wait_notified(2)
+    expect.equality(child.lua_get("_G.requests[3].arguments"), { "off" })
+    expect.equality(child.lua_get("_G.notified[2][1]"), "AsciidocPreview: debug off")
+end
+
+T["debug without an open preview reports the server's error"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    capture_notify()
+    child.cmd("AsciidocPreview debug on")
+    wait_notified(1)
+    expect.equality(child.lua_get("_G.notified[1][2]"), child.lua_get("vim.log.levels.ERROR"))
+    expect.equality(child.lua_get("_G.notified[1][1]:find('no preview is open', 1, true) ~= nil"), true)
+end
+
+T["debug rejects an unknown action without sending"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    capture_notify()
+    child.cmd("AsciidocPreview debug loud")
+    child.cmd("AsciidocPreview debug")
+    expect.equality(child.lua_get("#_G.requests"), 0)
+    expect.equality(child.lua_get("#_G.notified"), 2)
+    expect.equality(child.lua_get("_G.notified[2][2]"), child.lua_get("vim.log.levels.ERROR"))
+end
+
+T["debug show opens the log as a table"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    stub_client()
+    child.cmd("AsciidocPreview")
+    wait_opened()
+    capture_notify()
+    child.cmd("AsciidocPreview debug on")
+    wait_notified(1)
+    child.lua("vim.api.nvim_win_set_cursor(0, { 3, 0 })")
+    child.lua("vim.api.nvim_exec_autocmds('CursorMoved', {})")
+    expect.equality(
+        child.lua_get("vim.wait(10000, function() return #_G.moved > 0 and _G.moved[#_G.moved].line == 2 end, 20)"),
+        true
+    )
+    child.cmd("AsciidocPreview debug show")
+    expect.equality(child.lua_get("vim.wait(10000, function() return vim.bo.filetype == 'markdown' end, 20)"), true)
+    local lines = child.lua_get("vim.api.nvim_buf_get_lines(0, 0, -1, false)")
+    expect.equality(lines[1], "# Preview scroll debug (on)")
+    expect.equality(lines[3]:match("^| seq | sent ") ~= nil, true)
+    expect.equality(lines[5]:match("^| 1 | basic%.adoc:3 |") ~= nil, true)
+end
+
+-- The table rows of a debug log: one per page report, the sent cursor on
+-- the first row of each pair only.
+T["debug_table renders sent cursor and page reports side by side"] = function()
+    local lines = child.lua_get([[require("asciidoc.preview").debug_table({
+        enabled = false,
+        pairs = {
+            { seq = 1, sent = { file = "/b/doc.adoc", line = 1 }, page = {
+                { seq = 1, kind = "reveal", file = "/b/doc.adoc", line = 1, src = vim.NIL, skipped = vim.NIL,
+                  prev = { line = 1, y = 0, what = "synthetic" },
+                  next = { line = 12, y = 4800, what = "paragraph data-line-12" },
+                  target = 4800, action = "align", scrollBefore = 0, scrollAfter = 4800, viewport = 900 },
+                { seq = 1, kind = "html", file = "/b/doc.adoc", following = true, keepLine = vim.NIL,
+                  scrollBefore = 4800, scrollAfter = 4800 },
+                { seq = 1, kind = "scroll", file = "/b/ch.adoc", line = 7, cursor = false, scrollY = 5000 },
+            } },
+            { seq = 2, sent = { file = "/b/doc.adoc", line = 5 }, page = {} },
+            { seq = 3, sent = vim.NIL, page = {
+                { seq = 3, kind = "reveal", file = "/b/x.adoc", line = 2, src = "not-shown", skipped = "not-shown",
+                  prev = vim.NIL, next = vim.NIL, target = vim.NIL, action = vim.NIL,
+                  scrollBefore = 10, scrollAfter = 10, viewport = 900 },
+                { seq = 3, kind = "html", file = "/b/doc.adoc", following = vim.NIL, keepLine = vim.NIL,
+                  scrollBefore = vim.NIL, scrollAfter = 10 },
+                { seq = 3, kind = "scroll", file = "/b/a|b.adoc", line = 4, cursor = vim.NIL, scrollY = 0 },
+            } },
+        },
+    })]])
+    expect.equality(lines, {
+        "# Preview scroll debug (off)",
+        "",
+        "| seq | sent | kind | page | src | prev | next | target | action | scrollY | viewport | note |",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
+        "| 1 | doc.adoc:1 | reveal | doc.adoc:1 | main | 1@0 synthetic | 12@4800 paragraph data-line-12 | 4800 | align | 0→4800 | 900 | |",
+        "| | | html | doc.adoc | | | | | | 4800→4800 | | following |",
+        "| | | scroll | ch.adoc:7 | | | | | | 5000 | | to editor |",
+        "| 2 | doc.adoc:5 | – | | | | | | | | | no report |",
+        "| 3 | (unpaired) | reveal | x.adoc:2 | not-shown | | | | | 10 | 900 | skipped: not-shown |",
+        "| | | html | doc.adoc | | | | | | →10 | | keep line |",
+        "| | | scroll | a\\|b.adoc:4 | | | | | | 0 | | to editor |",
+    })
+end
+
+T["debug show without a log from the server reports an error"] = function()
+    helpers.edit_with_lsp(child, "tests/fixtures/basic.adoc")
+    capture_notify()
+    child.lua([[
+        local client = vim.lsp.get_clients({ bufnr = 0, name = "asciidoc" })[1]
+        client.request = function(_, _, _, handler) handler(nil, vim.NIL) return true, 1 end
+    ]])
+    child.cmd("AsciidocPreview debug show")
+    expect.equality(child.lua_get("_G.notified[1][2]"), child.lua_get("vim.log.levels.ERROR"))
+    expect.equality(child.lua_get("#vim.api.nvim_list_wins()"), 1)
+end
+
 return T

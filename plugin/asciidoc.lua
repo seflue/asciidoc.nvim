@@ -20,13 +20,19 @@ vim.api.nvim_create_user_command("AsciidocDebug", function()
 end, { desc = "Show how asciidoc-lsp resolves the cursor position" })
 
 vim.api.nvim_create_user_command("AsciidocPreview", function(opts)
-    require("asciidoc.preview").open(opts.fargs[1])
+    local preview = require("asciidoc.preview")
+    if opts.fargs[1] == "debug" then
+        preview.debug(opts.fargs[2])
+    else
+        preview.open(opts.fargs[1])
+    end
 end, {
-    nargs = "?",
-    complete = function(arg_lead)
-        return require("asciidoc.preview").complete_modes(arg_lead)
+    nargs = "*",
+    complete = function(arg_lead, cmdline)
+        return require("asciidoc.preview").complete_args(arg_lead, cmdline)
     end,
-    desc = "Open the AsciiDoc preview in the browser and make it follow the cursor",
+    desc = "Open the AsciiDoc preview in the browser and make it follow the cursor; "
+        .. "`debug on|off|show` for its scroll-sync log",
 })
 
 vim.api.nvim_create_user_command("AsciidocPreviewStop", function()

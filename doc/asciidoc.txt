@@ -405,6 +405,23 @@ PREVIEW                                          *asciidoc.nvim-preview*
 
     Any other value is reported as an error and nothing is sent.
 
+                                                 *:AsciidocPreview-debug*
+:AsciidocPreview debug {action}
+    The scroll-sync debug log of the open preview, for when the page
+    scrolls somewhere else than the cursor. Off by default. {action}:
+
+    `on`    the server numbers each cursor line it sends, and the page
+            reports how it placed each one: the two anchors the line lies
+            between (source line, page Y and the class of the block, or
+            `synthetic`), the target, the action and the scroll position
+            before and after. The page shows the last report in a box.
+    `off`   stop numbering and reporting; the log stays.
+    `show`  open the last 50 cursor lines with the page's reports in a
+            split, as a markdown table.
+
+    With `ASCIIDOC_LSP_LOG=debug` the server also writes both sides to its
+    log. Without an open preview the server's error is shown.
+
                                                     *:AsciidocPreviewStop*
 :AsciidocPreviewStop
     Stop sending the cursor line for the client of the current buffer. The
