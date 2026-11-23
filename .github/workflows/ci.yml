@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      # Side by side, not nested: the tests take the plugin repository as the
+      # workspace root, and the server would index a checkout inside it.
+      - uses: actions/checkout@v4
+        with:
+          path: asciidoc.nvim
+
+      # The suite runs against asciidoc-lsp main: the plugin follows the
+      # server's unreleased features. Tags give the server its real version,
+      # which :checkhealth compares against the required one.
+      - uses: actions/checkout@v4
+        with:
+          repository: seflue/asciidoc-lsp
+          path: asciidoc-lsp
+          submodules: true
+          fetch-depth: 0
+      - name: Install pinned Rust toolchain
+        working-directory: asciidoc-lsp
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: asciidoc-lsp
+      - uses: extractions/setup-just@v2
+      - name: Build asciidoc-lsp
+        run: just -f asciidoc-lsp/justfile build
+
+      - uses: rhysd/action-setup-vim@v1
+        with:
+          neovim: true
+          version: stable
+      - name: Install tree-sitter CLI
+        run: npm install -g tree-sitter-cli
+      - name: Install Asciidoctor
+        run: sudo gem install asciidoctor -v 2.0.26
+
+      - name: Run tests
+        run: |
+          ASCIIDOC_LSP_CMD="$(just -f asciidoc-lsp/justfile bin-path)"
+          export ASCIIDOC_LSP_CMD
+          just -f asciidoc.nvim/justfile test
